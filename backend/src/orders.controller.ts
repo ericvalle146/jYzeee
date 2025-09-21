@@ -10,7 +10,19 @@ export class OrdersController {
   @Post()
   async createOrder(@Body() orderData: any) {
     this.logger.log('📡 POST /orders - Criando pedido');
-    return this.ordersService.createOrder(orderData);
+    try {
+      const result = await this.ordersService.createOrder(orderData);
+      return {
+        status: 'success',
+        data: result
+      };
+    } catch (error) {
+      this.logger.error('❌ Erro ao criar pedido:', error);
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
   }
 
   @Get()
