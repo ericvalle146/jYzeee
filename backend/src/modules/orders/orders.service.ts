@@ -33,12 +33,18 @@ export class OrdersService {
 
       const { data: orders, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar pedidos:', error);
+        throw error;
+      }
 
-      // Filtrar apenas pedidos completos usando validação inteligente
-      const completeOrders = (orders || []).filter(order => this.isOrderComplete(order));
+      console.log('📊 Total de pedidos encontrados:', orders?.length || 0);
+      console.log('📋 Primeiros 3 pedidos:', orders?.slice(0, 3));
+
+      // TEMPORARIAMENTE: Retornar todos os pedidos para debug
+      // const completeOrders = (orders || []).filter(order => this.isOrderComplete(order));
       
-      return completeOrders;
+      return orders || [];
     } catch (error) {
       return [];
     }
@@ -46,10 +52,22 @@ export class OrdersService {
 
   // Função auxiliar para validar se o pedido está completo
   private isOrderComplete(order: any): boolean {
-    // Validação inteligente - requer apenas dados essenciais
+    // Validação mais flexível - aceitar pedidos com dados básicos
     const hasCustomer = order.nome_cliente && order.nome_cliente.trim() !== '';
     const hasOrder = order.pedido && order.pedido.trim() !== '';
     const hasValue = order.valor !== null && order.valor !== undefined && order.valor > 0;
+    
+    // Log para debug
+    console.log('🔍 Validando pedido:', {
+      id: order.id,
+      nome_cliente: order.nome_cliente,
+      pedido: order.pedido,
+      valor: order.valor,
+      hasCustomer,
+      hasOrder,
+      hasValue,
+      isComplete: hasCustomer && hasOrder && hasValue
+    });
     
     return hasCustomer && hasOrder && hasValue;
   }
