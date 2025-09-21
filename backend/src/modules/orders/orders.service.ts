@@ -161,9 +161,17 @@ export class OrdersService {
     endereço: string; // Campo correto com cedilha
   }) {
     try {
+      // Gerar ID único baseado no timestamp
+      const newId = Date.now();
+      
+      const orderWithId = {
+        id: newId,
+        ...orderData
+      };
+
       const { data: newOrder, error } = await this.supabase
         .from('pedidos')
-        .insert(orderData)
+        .insert(orderWithId)
         .select()
         .single();
 
