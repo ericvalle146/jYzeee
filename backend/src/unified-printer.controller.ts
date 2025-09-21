@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Logger, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { UnifiedPrinterService, SystemPrinter, PrintResult } from './unified-printer.service';
 
 @Controller('printer')
@@ -45,11 +46,14 @@ export class UnifiedPrinterController {
    * 🖨️ IMPRIMIR PEDIDO
    */
   @Post('print')
-  async printOrder(@Body() requestData: {
-    printerId: string;
-    orderData: any;
-    printText: string;
-  }): Promise<PrintResult> {
+  async printOrder(
+    @Body() requestData: {
+      printerId: string;
+      orderData: any;
+      printText: string;
+    },
+    @Req() req: Request
+  ): Promise<PrintResult> {
     this.logger.log(`📡 POST /printer/print - Pedido #${requestData.orderData?.id || 'N/A'} na impressora ${requestData.printerId}`);
     
     try {
@@ -61,10 +65,21 @@ export class UnifiedPrinterController {
         };
       }
 
+      // Capturar IP do cliente
+      const clientIP = req.headers['x-forwarded-for'] || 
+                      req.headers['x-real-ip'] || 
+                      req.connection.remoteAddress || 
+                      req.socket.remoteAddress ||
+                      (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                      req.ip;
+
+      this.logger.log(`🌐 IP do cliente: ${clientIP}`);
+
       return await this.printerService.printOrder(
         requestData.printerId,
         requestData.orderData,
-        requestData.printText
+        requestData.printText,
+        clientIP as string
       );
 
     } catch (error) {

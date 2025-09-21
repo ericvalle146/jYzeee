@@ -278,7 +278,7 @@ export class UnifiedPrinterService {
   /**
    * 🖨️ IMPRIMIR PEDIDO
    */
-  async printOrder(printerId: string, orderData: any, printText: string): Promise<PrintResult> {
+  async printOrder(printerId: string, orderData: any, printText: string, clientIP?: string): Promise<PrintResult> {
     try {
       this.logger.log(`🖨️ Imprimindo pedido ${orderData.id} na impressora ${printerId}`);
 
@@ -305,7 +305,7 @@ export class UnifiedPrinterService {
       }
 
       // 🚀 NOVA FUNCIONALIDADE: Enviar para serviço local se disponível
-      const localPrintResult = await this.sendToLocalPrinterService(orderData, printText);
+      const localPrintResult = await this.sendToLocalPrinterService(orderData, printText, clientIP);
       if (localPrintResult.success) {
         this.logger.log(`✅ Pedido ${orderData.id} enviado para impressão local`);
         return localPrintResult;
@@ -341,7 +341,7 @@ export class UnifiedPrinterService {
   /**
    * 🚀 ENVIAR PARA SERVIÇO LOCAL DE IMPRESSÃO
    */
-  private async sendToLocalPrinterService(orderData: any, printText: string): Promise<PrintResult> {
+  private async sendToLocalPrinterService(orderData: any, printText: string, clientIP?: string): Promise<PrintResult> {
     try {
       // Lista de possíveis URLs do serviço local
       const localUrls = [
@@ -359,11 +359,15 @@ export class UnifiedPrinterService {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-Forwarded-For': clientIP || 'unknown',
+              'X-Real-IP': clientIP || 'unknown'
             },
             body: JSON.stringify({
               orderData,
               printText,
               orderId: orderData.id,
+              clientIP: clientIP || 'unknown',
+              userName: orderData.nome_cliente || 'Usuário',
               timestamp: new Date().toISOString()
             }),
             timeout: 5000 // 5 segundos de timeout
@@ -376,6 +380,15 @@ export class UnifiedPrinterService {
               success: true,
               message: `Impressão enviada para serviço local: ${result.message}`,
               printerId: 'local-service'
+            };
+          } else if (response.status === 403) {
+            const errorResult = await response.json();
+            this.logger.warn(`⚠️ IP não autorizado: ${errorResult.message}`);
+            return {
+              success: false,
+              message: errorResult.message,
+              error: 'IP_NOT_AUTHORIZED',
+              authUrl: errorResult.authUrl
             };
           }
         } catch (error) {

@@ -1,0 +1,10 @@
+
+=== TESTE DE IMPRESSÃO ===
+Data: 21/09/2025, 15:56:06
+Serviço: Local Printer Service
+Status: ✅ FUNCIONANDO
+
+Este é um teste do sistema de impressão local.
+Se você está vendo isso, o sistema está funcionando!
+================================
+    
