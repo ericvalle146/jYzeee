@@ -36,6 +36,16 @@ export class WhatsAppService {
     const evolutionApiUrl = this.configService.get<string>('EVOLUTION_API_URL');
     const evolutionApiKey = this.configService.get<string>('EVOLUTION_API_KEY') || '';
     
+    // 🔧 TEMPORÁRIO: Desabilitar Evolution API para evitar dependência local
+    if (evolutionApiUrl && evolutionApiUrl.includes('evolution.jyze.space')) {
+      this.logger.log('🔧 WhatsApp Service initialized (Evolution API disabled for VPS)', {
+        operation: 'service-init',
+        evolutionApiUrl: 'DISABLED',
+        hasApiKey: false
+      });
+      return;
+    }
+    
     this.evolutionApiClient = axios.create({
       baseURL: evolutionApiUrl,
       timeout: 10000,
