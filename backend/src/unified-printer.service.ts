@@ -304,7 +304,14 @@ export class UnifiedPrinterService {
         };
       }
 
-      // Imprimir baseado no tipo
+      // 🚀 NOVA FUNCIONALIDADE: Enviar para serviço local se disponível
+      const localPrintResult = await this.sendToLocalPrinterService(orderData, printText);
+      if (localPrintResult.success) {
+        this.logger.log(`✅ Pedido ${orderData.id} enviado para impressão local`);
+        return localPrintResult;
+      }
+
+      // Fallback: Imprimir localmente na VPS (se houver impressora)
       let printResult: PrintResult;
 
       if (printer.type === 'usb' && printer.devicePath) {
@@ -326,6 +333,69 @@ export class UnifiedPrinterService {
       return {
         success: false,
         message: 'Erro interno na impressão',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 🚀 ENVIAR PARA SERVIÇO LOCAL DE IMPRESSÃO
+   */
+  private async sendToLocalPrinterService(orderData: any, printText: string): Promise<PrintResult> {
+    try {
+      // Lista de possíveis URLs do serviço local
+      const localUrls = [
+        'http://localhost:3003',
+        'http://127.0.0.1:3003',
+        'http://192.168.1.100:3003', // Ajuste para seu IP local
+        'http://10.0.0.100:3003'     // Ajuste para seu IP local
+      ];
+
+      for (const baseUrl of localUrls) {
+        try {
+          this.logger.log(`🔗 Tentando conectar com serviço local: ${baseUrl}`);
+          
+          const response = await fetch(`${baseUrl}/print`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderData,
+              printText,
+              orderId: orderData.id,
+              timestamp: new Date().toISOString()
+            }),
+            timeout: 5000 // 5 segundos de timeout
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            this.logger.log(`✅ Serviço local respondeu: ${result.message}`);
+            return {
+              success: true,
+              message: `Impressão enviada para serviço local: ${result.message}`,
+              printerId: 'local-service'
+            };
+          }
+        } catch (error) {
+          this.logger.debug(`⚠️ Serviço local ${baseUrl} não disponível: ${error.message}`);
+          continue;
+        }
+      }
+
+      this.logger.warn('⚠️ Nenhum serviço local de impressão encontrado');
+      return {
+        success: false,
+        message: 'Serviço local de impressão não disponível',
+        error: 'LOCAL_SERVICE_UNAVAILABLE'
+      };
+
+    } catch (error) {
+      this.logger.error('❌ Erro ao conectar com serviço local:', error);
+      return {
+        success: false,
+        message: 'Erro ao conectar com serviço local',
         error: error.message
       };
     }
