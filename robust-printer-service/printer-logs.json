@@ -1,0 +1,41 @@
+{
+  "logs": [
+    {
+      "timestamp": "2025-09-21T22:19:04.969Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para sistema padrão",
+          "printer": "system_default"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-21T22:18:58.561Z",
+      "level": "info",
+      "message": "Impressoras atualizadas",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-21T22:18:55.556Z",
+      "level": "info",
+      "message": "Teste da impressora: SISTEMA_PADRAO",
+      "data": {
+        "result": {
+          "success": false,
+          "message": "Erro ao imprimir em SISTEMA_PADRAO: Command failed: lp -d \"SISTEMA_PADRAO\" \"temp_print_1758493135484.txt\"\nlp: Error - The printer or class does not exist.\n",
+          "printer": "SISTEMA_PADRAO"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-21T22:18:52.554Z",
+      "level": "info",
+      "message": "Logs limpos",
+      "data": {}
+    }
+  ],
+  "lastUpdated": "2025-09-21T22:19:04.969Z"
+}

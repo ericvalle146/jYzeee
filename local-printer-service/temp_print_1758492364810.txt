@@ -1,0 +1,6 @@
+=== PEDIDO AUTORIZADO ===
+Data: 2025-09-21
+Cliente: Cliente Autorizado
+Pedido: #456
+Status: ✅ IMPRESSO COM SUCESSO
+=========================

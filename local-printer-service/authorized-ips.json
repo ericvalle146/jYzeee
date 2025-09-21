@@ -1,0 +1,13 @@
+{
+  "ips": [
+    {
+      "ip": "192.168.1.100",
+      "name": "Usuário não identificado",
+      "status": "approved",
+      "firstRequest": "2025-09-21T22:05:57.790Z",
+      "lastActivity": "2025-09-21T22:06:24.476Z",
+      "approvedAt": "2025-09-21T22:06:01.762Z"
+    }
+  ],
+  "lastUpdated": "2025-09-21T22:06:24.476Z"
+}

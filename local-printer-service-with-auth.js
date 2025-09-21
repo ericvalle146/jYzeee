@@ -26,7 +26,7 @@ app.use(express.static('public'));
 
 // Configurações
 const VPS_BACKEND_URL = 'https://api.jyze.space';
-const LOCAL_PRINTER_NAME = 'EPSON_TM_T20'; // Ajuste para sua impressora
+const LOCAL_PRINTER_NAME = 'impressora termica'; // Ajuste para sua impressora
 const AUTH_FILE = 'authorized-ips.json';
 
 // Estrutura de dados para IPs autorizados

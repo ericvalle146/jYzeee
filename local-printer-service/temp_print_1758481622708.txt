@@ -1,0 +1,11 @@
+
+=== TESTE DE IMPRESSÃO ===
+Data: 21/09/2025, 16:07:02
+Serviço: Local Printer Service com Auth
+Status: ✅ FUNCIONANDO
+
+Este é um teste do sistema de impressão local
+com autenticação por IP.
+Se você está vendo isso, o sistema está funcionando!
+================================
+    

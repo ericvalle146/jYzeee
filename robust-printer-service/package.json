@@ -1,0 +1,30 @@
+{
+  "name": "robust-printer-service",
+  "version": "1.0.0",
+  "description": "Sistema robusto de impressão local com autenticação por IP",
+  "main": "robust-printer-service.js",
+  "scripts": {
+    "start": "node robust-printer-service.js",
+    "dev": "nodemon robust-printer-service.js",
+    "test": "node test-robust-printer.js"
+  },
+  "keywords": [
+    "printer",
+    "printing",
+    "local-service",
+    "ip-auth",
+    "robust"
+  ],
+  "author": "Eric Valle",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

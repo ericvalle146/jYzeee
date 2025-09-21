@@ -304,11 +304,17 @@ export class UnifiedPrinterService {
         };
       }
 
-      // 🚀 NOVA FUNCIONALIDADE: Enviar para serviço local se disponível
+      // 🚀 NOVA FUNCIONALIDADE: SEMPRE tentar serviço local primeiro
+      this.logger.log(`🔗 Tentando serviço local para pedido ${orderData.id}`);
       const localPrintResult = await this.sendToLocalPrinterService(orderData, printText, clientIP);
       if (localPrintResult.success) {
         this.logger.log(`✅ Pedido ${orderData.id} enviado para impressão local`);
         return localPrintResult;
+      } else if (localPrintResult.error === 'IP_NOT_AUTHORIZED') {
+        this.logger.log(`⚠️ IP não autorizado: ${localPrintResult.message}`);
+        return localPrintResult;
+      } else {
+        this.logger.log(`⚠️ Serviço local não disponível: ${localPrintResult.message}`);
       }
 
       // Fallback: Imprimir localmente na VPS (se houver impressora)
