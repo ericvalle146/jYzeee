@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Configurações - Demo Completa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .feature-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .feature-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .feature-card p {
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        .demo-section {
+            background: #f0f4f8;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-testing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Sistema de Configurações</h1>
+            <p>Interface simplificada com máxima segurança e integração real</p>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Máxima Segurança</h3>
+                <p>Todas as credenciais são criptografadas e armazenadas com segurança no arquivo .env</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Tempo Real</h3>
+                <p>Alterações são aplicadas instantaneamente no arquivo .env quando você salva</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Apenas o Essencial</h3>
+                <p>4 seções básicas: N8N, Database, Evolution API e APIs Externas</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <h3>Teste de Conexão</h3>
+                <p>Valida todas as configurações antes de salvar no sistema</p>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🚀 Status do Sistema</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <strong>N8N Automation</strong>
+                    <div class="status-indicator status-testing pulse">
+                        <span>⏳</span> Aguardando configuração
+                    </div>
+                </div>
+                <div>
+                    <strong>Banco de Dados</strong>
+                    <div class="status-indicator status-testing pulse">
+                        <span>⏳</span> Aguardando configuração
+                    </div>
+                </div>
+                <div>
+                    <strong>Evolution API</strong>
+                    <div class="status-indicator status-testing pulse">
+                        <span>⏳</span> Aguardando configuração
+                    </div>
+                </div>
+                <div>
+                    <strong>APIs Externas</strong>
+                    <div class="status-indicator status-testing pulse">
+                        <span>⏳</span> Aguardando configuração
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="highlight">
+            <h3>✨ Como funciona o sistema:</h3>
+            <p><strong>1.</strong> Você configura apenas Domínio + API Key para cada serviço</p>
+            <p><strong>2.</strong> O sistema testa a conexão automaticamente</p>
+            <p><strong>3.</strong> As configurações são salvas com segurança no arquivo .env</p>
+            <p><strong>4.</strong> Todas as variáveis de ambiente são atualizadas em tempo real</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📋 Arquivo .env gerado automaticamente:</h2>
+            <div class="code-block">
+# Configurações do Sistema - Gerado automaticamente
+
+# N8N Automation
+N8N_DOMAIN=
+N8N_API_KEY=
+
+# Database Configuration  
+DATABASE_URL=
+DATABASE_KEY=
+
+# Evolution API
+EVOLUTION_DOMAIN=
+EVOLUTION_API_KEY=
+
+# External APIs
+EXTERNAL_API_DOMAIN=
+EXTERNAL_API_KEY=
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <a href="http://localhost:5173" class="btn btn-primary">
+                🚀 Abrir Interface de Configuração
+            </a>
+            <a href="http://localhost:3001/config" class="btn btn-secondary">
+                📡 Ver API Backend
+            </a>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; color: #718096;">
+            <p>💡 <strong>Frontend:</strong> React + TypeScript (Porta 5173)</p>
+            <p>💡 <strong>Backend:</strong> NestJS (Porta 3001)</p>
+            <p>💡 <strong>Segurança:</strong> Criptografia + Validação + Testes de conexão</p>
+        </div>
+    </div>
+</body>
+</html>

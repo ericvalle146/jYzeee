@@ -1,0 +1,321 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Jyze - Sistema Profissional de Agente IA */
+
+@layer base {
+  :root {
+    /* Background System */
+    --background: 0 0% 100%;
+    --background-secondary: 220 14% 96%;
+    --background-accent: 220 13% 91%;
+    --foreground: 220 9% 9%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-secondary: 220 14% 96%;
+    --card-foreground: 220 9% 9%;
+
+    /* Popover System */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 9% 9%;
+
+    /* Primary Professional Green System */
+    --primary: 142 76% 36%;
+    --primary-dark: 142 76% 26%;
+    --primary-light: 142 76% 46%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary Professional System */
+    --secondary: 220 14% 96%;
+    --secondary-dark: 220 13% 91%;
+    --secondary-foreground: 220 9% 9%;
+
+    /* Success Fresh Green */
+    --success: 142 76% 36%;
+    --success-light: 142 69% 58%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning Professional Orange */
+    --warning: 32 95% 44%;
+    --warning-light: 32 95% 54%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Muted System */
+    --muted: 220 14% 96%;
+    --muted-dark: 220 13% 91%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent System */
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 9%;
+
+    /* Destructive System */
+    --destructive: 0 84% 60%;
+    --destructive-light: 0 84% 70%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border & Input System */
+    --border: 220 13% 91%;
+    --border-strong: 220 13% 87%;
+    --input: 220 13% 91%;
+    --ring: 142 76% 36%;
+
+    /* Gradientes Profissionais */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 14% 96%), hsl(220 13% 91%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(160 76% 36%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 58%));
+    
+    /* Glass Effects Modernos */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(34, 197, 94, 0.2);
+    
+    /* Shadows Profissionais */
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 0 1px hsl(142 76% 36% / 0.1);
+
+    /* Animation Timings */
+    --transition-fast: 0.15s ease-out;
+    --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 8px;
+    --radius-sm: 6px;
+    --radius-lg: 12px;
+  }
+
+  .dark {
+    /* Dark Professional Mode */
+    --background: 224 71% 4%;
+    --background-secondary: 220 13% 9%;
+    --background-accent: 220 13% 13%;
+    --foreground: 220 9% 98%;
+
+    /* Dark Card System */
+    --card: 224 71% 4%;
+    --card-secondary: 220 13% 9%;
+    --card-foreground: 220 9% 98%;
+
+    /* Dark Primary System */
+    --primary: 142 69% 58%;
+    --primary-dark: 142 76% 36%;
+    --primary-light: 142 69% 68%;
+    
+    /* Dark Secondary System */
+    --secondary: 220 13% 13%;
+    --secondary-dark: 220 13% 9%;
+    --secondary-foreground: 220 9% 98%;
+    
+    /* Dark Muted System */
+    --muted: 220 13% 13%;
+    --muted-dark: 220 13% 9%;
+    --muted-foreground: 220 9% 63%;
+
+    /* Dark Accent System */
+    --accent: 220 13% 13%;
+    --accent-foreground: 220 9% 98%;
+
+    /* Dark Borders */
+    --border: 220 13% 18%;
+    --border-strong: 220 13% 22%;
+    --input: 220 13% 13%;
+
+    /* Dark Glass Effects */
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(34, 197, 94, 0.2);
+
+    /* Dark Shadows */
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+    --shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Glass Card Effect Profissional */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-card:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+  }
+
+  /* Gradient Text Profissional */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Gradient Background */
+  .gradient-bg {
+    background: var(--gradient-primary);
+  }
+
+  /* Glow Effect Profissional */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Hover Animations Profissionais */
+  .hover-lift {
+    transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Animações Profissionais */
+  .professional-element {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .modern-card {
+    animation: slide-up 0.6s ease-out;
+  }
+
+  .professional-button {
+    background: var(--gradient-primary);
+    transition: all var(--transition-smooth);
+  }
+
+  .professional-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Loading Animation */
+  .loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Heartbeat Animations for Charts */
+  .heartbeat-1 {
+    animation: heartbeat-1 2s ease-in-out infinite;
+  }
+
+  .heartbeat-2 {
+    animation: heartbeat-2 2.2s ease-in-out infinite;
+    animation-delay: 0.3s;
+  }
+
+  .heartbeat-3 {
+    animation: heartbeat-3 1.8s ease-in-out infinite;
+    animation-delay: 0.6s;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .7;
+    }
+  }
+
+  @keyframes heartbeat-1 {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    25%, 75% {
+      transform: scale(1.02);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes heartbeat-2 {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    20%, 80% {
+      transform: scale(1.03);
+      opacity: 0.85;
+    }
+    40%, 60% {
+      transform: scale(1.06);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes heartbeat-3 {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    30%, 70% {
+      transform: scale(1.04);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(1.08);
+      opacity: 0.75;
+    }
+  }
+
+  /* Smooth Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary-dark));
+  }
+
+  /* Configurações específicas */
+  .config-grid {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .config-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+
+  .status-pulse {
+    animation: pulse 2s infinite;
+  }
+}

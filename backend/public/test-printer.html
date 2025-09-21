@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Impressão - JYZE</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🖨️ Teste de Impressão JYZE</h1>
+    
+    <div id="status" class="status info">
+        🔄 Carregando sistema de impressão...
+    </div>
+    
+    <div id="controls" style="display: none;">
+        <button class="btn" onclick="detectPrinters()">🔍 Detectar Impressoras</button>
+        <button class="btn" onclick="testPrint()">🧪 Teste de Impressão</button>
+        <button class="btn" onclick="printSampleOrder()">📄 Imprimir Pedido Exemplo</button>
+    </div>
+    
+    <div id="printer-info"></div>
+    
+    <script src="/static/print-handler.js"></script>
+    <script>
+        let printer = null;
+        
+        window.onload = async () => {
+            try {
+                printer = window.LocalPrinter;
+                if (printer) {
+                    document.getElementById('status').innerHTML = '✅ Sistema de impressão carregado!';
+                    document.getElementById('status').className = 'status success';
+                    document.getElementById('controls').style.display = 'block';
+                } else {
+                    throw new Error('LocalPrinter não encontrado');
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ Erro: ' + error.message;
+                document.getElementById('status').className = 'status error';
+            }
+        };
+        
+        async function detectPrinters() {
+            document.getElementById('status').innerHTML = '🔍 Detectando impressoras...';
+            document.getElementById('status').className = 'status info';
+            
+            const result = await printer.detectPrinters();
+            
+            if (result.success) {
+                document.getElementById('status').innerHTML = `✅ Impressoras encontradas (${result.method})`;
+                document.getElementById('status').className = 'status success';
+                
+                const info = result.printers.map(p => 
+                    `<li><strong>${p.name}</strong> - ${p.vendor}</li>`
+                ).join('');
+                document.getElementById('printer-info').innerHTML = `<ul>${info}</ul>`;
+            } else {
+                document.getElementById('status').innerHTML = '❌ Erro: ' + result.error;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+        
+        async function testPrint() {
+            document.getElementById('status').innerHTML = '🖨️ Executando teste de impressão...';
+            document.getElementById('status').className = 'status info';
+            
+            const result = await printer.testPrint();
+            
+            if (result.success) {
+                document.getElementById('status').innerHTML = `✅ Teste impresso via ${result.method}!`;
+                document.getElementById('status').className = 'status success';
+            } else {
+                document.getElementById('status').innerHTML = '❌ Erro: ' + result.error;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+        
+        async function printSampleOrder() {
+            const sampleOrder = {
+                id: Math.floor(Math.random() * 1000),
+                nome_cliente: 'João da Silva',
+                pedido: '2x Pizza Margherita G + 1x Coca Cola 2L + 1x Batata Frita',
+                observações: 'Sem cebola na pizza, extra queijo',
+                valor: 75.90,
+                tipo_pagamento: 'PIX',
+                endereço: 'Rua das Flores, 123, Apt 45 - Centro - São Paulo/SP - CEP: 01234-567'
+            };
+            
+            document.getElementById('status').innerHTML = '🖨️ Imprimindo pedido exemplo...';
+            document.getElementById('status').className = 'status info';
+            
+            const result = await printer.printOrder(sampleOrder);
+            
+            if (result.success) {
+                document.getElementById('status').innerHTML = `✅ Pedido impresso via ${result.method}!`;
+                document.getElementById('status').className = 'status success';
+            } else {
+                document.getElementById('status').innerHTML = '❌ Erro: ' + result.error;
+                document.getElementById('status').className = 'status error';
+                if (result.fallback) {
+                    document.getElementById('status').innerHTML += '<br>💡 ' + result.fallback;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

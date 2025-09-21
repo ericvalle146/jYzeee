@@ -1,0 +1,24 @@
+# Compilados
+dist/
+build/
+
+# Dependências
+node_modules/
+
+# Ambiente
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+logs/
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma (se usar)
+prisma/dev.db
+
+# Cache
+.eslintcache
