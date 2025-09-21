@@ -2206,6 +2206,6 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
       </Dialog>
     </div>
   );
-};
+}
 
 export default Pedidos;

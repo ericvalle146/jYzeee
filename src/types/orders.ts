@@ -15,8 +15,7 @@ export interface Order {
   impresso: boolean;
 }
 
-// Validação INTELIGENTE - campos obrigatórios: nome_cliente, pedido
-// Valor é opcional (pode ser null para pedidos sem preço definido)
+// Validação FLEXÍVEL - aceitar pedidos com dados básicos
 export function isOrderComplete(order: Order): boolean {
   console.log('🔍 Validando pedido:', {
     id: order.id,
@@ -29,10 +28,10 @@ export function isOrderComplete(order: Order): boolean {
   const hasNomeCliente = order.nome_cliente && order.nome_cliente.trim() !== '';
   const hasPedido = order.pedido && order.pedido.trim() !== '';
   
-  // Valor pode ser null/undefined para pedidos sem preço definido
-  const hasValor = order.valor === null || order.valor === undefined || order.valor > 0;
+  // Aceitar pedidos mesmo sem valor definido
+  const hasValor = order.valor === null || order.valor === undefined || order.valor >= 0;
   
-  const result = hasNomeCliente && hasPedido && hasValor;
+  const result = hasNomeCliente && hasPedido;
   
   console.log('✅ Resultado validação:', {
     hasNomeCliente,
