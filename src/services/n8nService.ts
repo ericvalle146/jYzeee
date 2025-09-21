@@ -22,7 +22,7 @@ class N8nService {
 
   constructor() {
     // Use the backend as proxy to avoid CORS issues
-    this.backendUrl = 'http://localhost:3002';
+    this.backendUrl = 'https://api.jyze.space';
   }
 
   private async makeRequest<T>(

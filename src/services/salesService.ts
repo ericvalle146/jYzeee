@@ -313,7 +313,7 @@ export class SalesService {
     console.log(`🔄 [SalesService] Buscando dados via Backend API para período: ${period}`);
     
     try {
-      const response = await fetch(`http://localhost:3002/sales/stats?period=${period}`);
+      const response = await fetch(`https://api.jyze.space/sales/stats?period=${period}`);
       
       if (!response.ok) {
         throw new Error(`Backend API retornou erro: ${response.status}`);

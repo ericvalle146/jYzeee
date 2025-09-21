@@ -18,12 +18,12 @@ class MessagesService {
       // Buscar dados da API local em paralelo
       const timestamp = Date.now();
       const [statsResponse, messagesResponse] = await Promise.all([
-        fetch(`http://localhost:3002/messages/stats?period=${period}&t=${timestamp}`, {
+        fetch(`https://api.jyze.space/messages/stats?period=${period}&t=${timestamp}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-cache'
         }),
-        fetch(`http://localhost:3002/messages?period=${period}&t=${timestamp}`, {
+        fetch(`https://api.jyze.space/messages?period=${period}&t=${timestamp}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-cache'

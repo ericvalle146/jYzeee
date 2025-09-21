@@ -27,7 +27,7 @@ export function useSalesStats(period: ChartPeriod = 'day') {
       try {
         console.log('🔄 [SALES STATS] Tentando fallback via backend...');
         const timestamp = Date.now();
-        const url = `http://localhost:3002/sales/stats?period=${period}&t=${timestamp}`;
+        const url = `https://api.jyze.space/sales/stats?period=${period}&t=${timestamp}`;
         
         const response = await fetch(url, {
           method: 'GET',

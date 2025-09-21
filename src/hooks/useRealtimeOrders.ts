@@ -61,8 +61,8 @@ interface UseRealtimeOrdersReturn {
 
 import { supabase } from '@/config/supabase';
 
-// PADRONIZAÇÃO DE DOMÍNIO - SEMPRE localhost para desenvolvimento
-const API_URL = 'http://localhost:3002';
+// PADRONIZAÇÃO DE DOMÍNIO - PRODUÇÃO
+const API_URL = 'https://api.jyze.space';
 
 export const useRealtimeOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);

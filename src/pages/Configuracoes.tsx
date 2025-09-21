@@ -156,7 +156,7 @@ export default function Configuracoes() {
     const loadConfig = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:3002/config');
+        const response = await fetch('https://api.jyze.space/config');
         if (response.ok) {
           const data = await response.json();
           setConfig(data);
@@ -183,7 +183,7 @@ export default function Configuracoes() {
   const loadConfigurations = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3002/config');
+      const response = await fetch('https://api.jyze.space/config');
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
@@ -224,7 +224,7 @@ export default function Configuracoes() {
     );
 
     try {
-      const response = await fetch(`http://localhost:3002/config/test/${service}`, {
+      const response = await fetch(`https://api.jyze.space/config/test/${service}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ export default function Configuracoes() {
   const saveConfiguration = async (service: keyof EnvironmentConfig) => {
     setSaving(true);
     try {
-      const response = await fetch(`http://localhost:3002/config/save/${service}`, {
+      const response = await fetch(`https://api.jyze.space/config/save/${service}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +307,7 @@ export default function Configuracoes() {
   const saveAllConfigurations = async () => {
     setSaving(true);
     try {
-      const response = await fetch('http://localhost:3002/config/save-all', {
+      const response = await fetch('https://api.jyze.space/config/save-all', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

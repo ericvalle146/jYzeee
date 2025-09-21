@@ -7,7 +7,7 @@
  * Valida se a API está funcionando corretamente
  */
 
-const API_URL = 'http://localhost:3002/messages/count';
+const API_URL = 'https://api.jyze.space/messages/count';
 
 async function testMessageAPI() {
   console.log('🧪 [TEST] Testando API de Mensagens...');
@@ -90,7 +90,7 @@ async function testMessageAPI() {
     
   } catch (error) {
     console.error('❌ [TEST] Erro durante os testes:', error.message);
-    console.error('💡 [TEST] Certifique-se de que o backend está rodando em localhost:3002');
+    console.error('💡 [TEST] Certifique-se de que o backend está rodando em https://api.jyze.space');
   }
 }
 

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 8081, // Porta definida no .env
     proxy: {
       '/api': {
-        target: 'http://localhost:3002',
+        target: 'https://api.jyze.space',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

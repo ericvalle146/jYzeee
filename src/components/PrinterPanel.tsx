@@ -149,7 +149,7 @@ export const PrinterPanel: React.FC<PrinterPanelProps> = ({
         created_at: new Date().toISOString()
       };
 
-      const response = await fetch('http://localhost:3002/printer/print', {
+      const response = await fetch('https://api.jyze.space/printer/print', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

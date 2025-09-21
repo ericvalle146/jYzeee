@@ -8,8 +8,8 @@ export class CustomersService {
 
   constructor() {
     // Configuração do Supabase a partir das variáveis de ambiente
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://mqkssxrwawgosjewtxll.supabase.co';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xa3NzeHJ3YXdnb3NqZXd0eGxsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE2MDk2NiwiZXhwIjoyMDcwNzM2OTY2fQ.CJDAuGwNjmtnEPJuVxs9yxYmjQ3ofy5N-1Wz2B0Vkk0';
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://jvwfdcjqrptlpgxqxnmt.supabase.co';
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2d2ZkY2pxcnB0bHBneHF4bm10Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI3Mjc2NSwiZXhwIjoyMDcyODQ4NzY1fQ.nc3gfOoaqljUACNIa739uZvGifl1O4ADLlRRv0DkXB8';
     
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.logger.log('🔗 Supabase Client inicializado para Customers');

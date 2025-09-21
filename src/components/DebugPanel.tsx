@@ -9,7 +9,7 @@ export function DebugPanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const API_URL = 'http://localhost:3002';
+    const API_URL = 'https://api.jyze.space';
     try {
       // Fetch customer data
       const customerResponse = await fetch(`${API_URL}/api/customers/stats`);

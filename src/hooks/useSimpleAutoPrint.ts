@@ -169,7 +169,7 @@ export const useSimpleAutoPrint = (
   // Função para buscar pedidos da API (para polling)
   const fetchOrdersFromAPI = async (): Promise<Order[]> => {
     try {
-      const response = await fetch('http://localhost:3002/orders');
+      const response = await fetch('https://api.jyze.space/orders');
       const data = await response.json();
       return data.data || [];
     } catch (error) {

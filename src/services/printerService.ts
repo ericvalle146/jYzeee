@@ -63,7 +63,7 @@ class PrinterService {
   async detectPrinters(): Promise<any[]> {
     try {
       // A rota da impressora está em /printer, não em /api/printer
-      const response = await fetch('http://localhost:3002/printer/detect', {
+      const response = await fetch('https://api.jyze.space/printer/detect', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ class PrinterService {
       
       console.log('📄 FRONTEND: Texto final gerado para envio:', printText);
       
-      const response = await fetch('http://localhost:3002/printer/print', {
+      const response = await fetch('https://api.jyze.space/printer/print', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +191,7 @@ class PrinterService {
     try {
       const testConfig = { ...this.config, ...config };
       
-      const response = await fetch('http://localhost:3002/printer/test', {
+      const response = await fetch('https://api.jyze.space/printer/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ class PrinterService {
 
   async getSystemInfo(): Promise<any> {
     try {
-      const response = await fetch('http://localhost:3002/printer/system-info');
+      const response = await fetch('https://api.jyze.space/printer/system-info');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -233,7 +233,7 @@ class PrinterService {
    */
   async checkPrinterStatus(): Promise<PrinterStatus> {
     try {
-      const response = await fetch('http://localhost:3002/printer/status');
+      const response = await fetch('https://api.jyze.space/printer/status');
       if (!response.ok) {
         throw new Error('Falha ao verificar status da impressora');
       }

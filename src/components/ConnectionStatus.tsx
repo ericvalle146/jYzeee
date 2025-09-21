@@ -8,7 +8,7 @@ export const ConnectionStatus: React.FC = () => {
   const checkBackend = async () => {
     try {
       setBackendStatus('checking');
-      const response = await fetch(`http://localhost:3002/customers/stats`, {
+      const response = await fetch(`https://api.jyze.space/customers/stats`, {
         method: 'HEAD',
         cache: 'no-cache',
       });

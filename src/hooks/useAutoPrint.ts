@@ -51,7 +51,7 @@ export const useAutoPrint = ({ selectedPrinter, enabled }: UseAutoPrintProps) =>
         try {
           console.log(`🖨️ Enviando pedido ${order.id} para impressão automática`);
           
-          const response = await fetch('http://localhost:3002/printer/print-order', {
+          const response = await fetch('https://api.jyze.space/printer/print-order', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

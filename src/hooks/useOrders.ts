@@ -14,7 +14,7 @@ interface UseOrdersReturn {
 
 // Configurar API URL
 // PADRONIZAÇÃO DE PORTA - SEMPRE 3001
-const API_URL = 'http://localhost:3002';
+const API_URL = 'https://api.jyze.space';
 
 export const useOrders = (): UseOrdersReturn => {
   const [orders, setOrders] = useState<Order[]>([]);

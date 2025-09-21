@@ -8,11 +8,11 @@
 // URLs BASE
 export const API_CONFIG = {
   // Backend principal
-  BACKEND_URL: 'http://localhost:3002',
-  BACKEND_API: 'http://localhost:3002',
+  BACKEND_URL: 'https://api.jyze.space',
+  BACKEND_API: 'https://api.jyze.space',
   
   // Frontend 
-  FRONTEND_URL: 'http://localhost:8081',
+  FRONTEND_URL: 'https://jyze.space',
   
   // Timeouts padrão
   DEFAULT_TIMEOUT: 10000, // 10 segundos
