@@ -1401,7 +1401,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                 <CardHeader className="p-0 pb-2 flex-shrink-0">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex flex-col">
-                      <div className="text-lg font-bold text-white mb-1">
+                      <div className="text-lg font-bold text-foreground mb-1">
                         🆔 ID: {order.id}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -1541,7 +1541,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                 <CardHeader className="p-0 pb-2 flex-shrink-0">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex flex-col">
-                      <div className="text-lg font-bold text-white mb-1">
+                      <div className="text-lg font-bold text-foreground mb-1">
                         🆔 ID: {order.id}
                       </div>
                       <p className="text-xs text-muted-foreground">
