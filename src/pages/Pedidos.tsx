@@ -1402,7 +1402,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex flex-col">
                       <div className="text-lg font-bold text-white mb-1">
-                        #{order.id}
+                        🆔 ID: {order.id}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(order.created_at)}
@@ -1542,7 +1542,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex flex-col">
                       <div className="text-lg font-bold text-white mb-1">
-                        #{order.id}
+                        🆔 ID: {order.id}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(order.created_at)}
