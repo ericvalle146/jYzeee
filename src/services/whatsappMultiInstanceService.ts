@@ -104,7 +104,7 @@ class WhatsAppMultiInstanceService {
     }
 
     try {
-      const response = await this.makeRequest<QRCodeResponse>('/api/whatsapp/qr-code', {
+      const response = await this.makeRequest<QRCodeResponse>('/whatsapp/qr-code', {
         method: 'POST',
         body: JSON.stringify({ clientId: clientId.trim() }),
       });
@@ -133,7 +133,7 @@ class WhatsAppMultiInstanceService {
     }
 
     try {
-      const response = await this.makeRequest<InstanceStatusResponse>(`/api/whatsapp/status/${clientId.trim()}`);
+      const response = await this.makeRequest<InstanceStatusResponse>(`/whatsapp/status/${clientId.trim()}`);
 
       if (response.success && response.data) {
         console.log(`✅ Status for client ${clientId}:`, response.data.status);
@@ -155,7 +155,7 @@ class WhatsAppMultiInstanceService {
     console.log('📋 Retrieving all instances');
 
     try {
-      const response = await this.makeRequest<WhatsAppInstance[]>('/api/whatsapp/instances');
+      const response = await this.makeRequest<WhatsAppInstance[]>('/whatsapp/instances');
 
       if (response.success && response.data) {
         console.log(`✅ Retrieved ${response.data.length} instances`);
@@ -181,7 +181,7 @@ class WhatsAppMultiInstanceService {
     }
 
     try {
-      const response = await this.makeRequest(`/api/whatsapp/instance/${clientId.trim()}`, {
+      const response = await this.makeRequest(`/whatsapp/instance/${clientId.trim()}`, {
         method: 'DELETE',
       });
 
@@ -204,7 +204,7 @@ class WhatsAppMultiInstanceService {
     console.log('🏥 Performing health check');
 
     try {
-      const response = await this.makeRequest<HealthCheckResponse>('/api/whatsapp/health');
+      const response = await this.makeRequest<HealthCheckResponse>('/whatsapp/health');
 
       if (response.success && response.data) {
         console.log(`✅ Health check completed - ${response.data.connectedInstances}/${response.data.totalInstances} instances connected`);
@@ -230,7 +230,7 @@ class WhatsAppMultiInstanceService {
     console.log('⚙️ Checking API configuration');
 
     try {
-      const response = await this.makeRequest('/api/whatsapp/config');
+      const response = await this.makeRequest('/whatsapp/config');
 
       if (response.data) {
         console.log('✅ Configuration status retrieved:', response.data.configured);
@@ -252,7 +252,7 @@ class WhatsAppMultiInstanceService {
     console.log('🔍 Triggering manual health check');
 
     try {
-      const response = await this.makeRequest<HealthCheckResponse>('/api/monitoring/health-check', {
+      const response = await this.makeRequest<HealthCheckResponse>('/monitoring/health-check', {
         method: 'POST',
       });
 
@@ -276,7 +276,7 @@ class WhatsAppMultiInstanceService {
     console.log('🧪 Testing alert system');
 
     try {
-      const response = await this.makeRequest('/api/monitoring/test-alert', {
+      const response = await this.makeRequest('/monitoring/test-alert', {
         method: 'POST',
       });
 
@@ -305,7 +305,7 @@ class WhatsAppMultiInstanceService {
     console.log('📊 Getting monitoring status');
 
     try {
-      const response = await this.makeRequest('/api/monitoring/status');
+      const response = await this.makeRequest('/monitoring/status');
 
       if (response.success && response.data) {
         console.log('✅ Monitoring status retrieved');

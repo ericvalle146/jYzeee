@@ -139,7 +139,7 @@ export function ProductForm({ open, onOpenChange, onProductCreated }: ProductFor
       };
 
       // Fazer requisição para o backend
-      const response = await fetch('/api/produtos', {
+      const response = await fetch('https://api.jyze.space/produtos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

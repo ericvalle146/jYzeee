@@ -12,7 +12,7 @@ export interface ResponseTimeData {
 
 export class AgentConfigAPI {
   static async saveAgentConfig(data: Partial<AgentConfigData>) {
-    const response = await fetch(`${API_BASE_URL}/api/agent-config`, {
+    const response = await fetch(`${API_BASE_URL}/agent-config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export class AgentConfigAPI {
   }
 
   static async getAgentConfig(): Promise<AgentConfigData> {
-    const response = await fetch(`${API_BASE_URL}/api/agent-config`);
+    const response = await fetch(`${API_BASE_URL}/agent-config`);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
@@ -38,7 +38,7 @@ export class AgentConfigAPI {
   }
 
   static async getAgentConfigApiFormat(): Promise<{nomeAgente: string; tempoEntregaMinutos: number; valorFrete: number}> {
-    const response = await fetch(`${API_BASE_URL}/api/agent-config/api-format`);
+    const response = await fetch(`${API_BASE_URL}/agent-config/api-format`);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
@@ -48,7 +48,7 @@ export class AgentConfigAPI {
   }
 
   static async exportAgentConfig() {
-    const response = await fetch(`${API_BASE_URL}/api/agent-config/export`);
+    const response = await fetch(`${API_BASE_URL}/agent-config/export`);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
@@ -60,7 +60,7 @@ export class AgentConfigAPI {
 
 export class ResponseTimeAPI {
   static async saveResponseTime(data: Partial<ResponseTimeData>) {
-    const response = await fetch(`${API_BASE_URL}/api/response-time`, {
+    const response = await fetch(`${API_BASE_URL}/response-time`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ export class ResponseTimeAPI {
   }
 
   static async getResponseTime(): Promise<ResponseTimeData> {
-    const response = await fetch(`${API_BASE_URL}/api/response-time`);
+    const response = await fetch(`${API_BASE_URL}/response-time`);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
@@ -86,7 +86,7 @@ export class ResponseTimeAPI {
   }
 
   static async exportResponseTime() {
-    const response = await fetch(`${API_BASE_URL}/api/response-time/export`);
+    const response = await fetch(`${API_BASE_URL}/response-time/export`);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);

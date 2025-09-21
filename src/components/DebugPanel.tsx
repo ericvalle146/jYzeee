@@ -12,7 +12,7 @@ export function DebugPanel() {
     const API_URL = 'https://api.jyze.space';
     try {
       // Fetch customer data
-      const customerResponse = await fetch(`${API_URL}/api/customers/stats`);
+      const customerResponse = await fetch(`${API_URL}/customers/stats`);
       const customerResult = await customerResponse.json();
       setCustomerData({
         status: customerResponse.status,
@@ -21,7 +21,7 @@ export function DebugPanel() {
       });
 
       // Fetch sales data
-      const salesResponse = await fetch(`${API_URL}/api/sales/stats`);
+      const salesResponse = await fetch(`${API_URL}/sales/stats`);
       const salesResult = await salesResponse.json();
       setSalesData({
         status: salesResponse.status,

@@ -28,7 +28,7 @@ export const useProducts = (): UseProductsReturn => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/produtos', {
+      const response = await fetch('https://api.jyze.space/produtos', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
