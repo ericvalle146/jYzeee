@@ -8,7 +8,14 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  async createOrder(@Body() orderData: any) {
+  async createOrder(@Body() orderData: {
+    nome_cliente: string;
+    pedido: string;
+    observações?: string;
+    valor: number;
+    tipo_pagamento: string;
+    endereço: string;
+  }) {
     this.logger.log('📡 POST /orders - Criando pedido');
     try {
       const result = await this.ordersService.createOrder(orderData);
