@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/config/api';
+import { environment } from '@/config/environment';
 import { Order } from '../types/orders';
 import { printLayoutService } from './printLayoutService';
 import { PrintLayoutConfig } from '../types/printer';
@@ -33,9 +34,14 @@ export interface PrinterStatus {
 
 class UnifiedPrinterService {
   private readonly apiUrl: string;
+  private readonly printUrl: string;
 
   constructor() {
     this.apiUrl = API_CONFIG.BACKEND_API;
+    // Se estiver no Electron ou local, usa servidor local para impressão
+    this.printUrl = environment.isElectron || environment.isLocal 
+      ? environment.localPrintServer 
+      : this.apiUrl;
   }
 
   /**
@@ -45,7 +51,14 @@ class UnifiedPrinterService {
     try {
       // console.log('🔍 Detectando todas as impressoras do sistema...');
       
-      const response = await fetch(`${this.apiUrl}/printer/detect`, {
+      // Se não tiver servidor local disponível, retorna array vazio
+      if ((environment.isElectron || environment.isLocal) && 
+          !(await environment.checkLocalPrintServer())) {
+        console.log('⚠️ Servidor de impressão local não disponível');
+        return [];
+      }
+      
+      const response = await fetch(`${this.printUrl}/printer/detect`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +92,7 @@ class UnifiedPrinterService {
     try {
       // console.log(`⚡ [Activate] Tentando ativar impressora: ${printerId}`);
       
-      const response = await fetch(`${this.apiUrl}/printer/activate/${printerId}`, {
+      const response = await fetch(`${this.printUrl}/printer/activate/${printerId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,7 +140,7 @@ class UnifiedPrinterService {
       
       // console.log('📄 Texto para impressão (layout dinâmico):', printText);
 
-      const response = await fetch(`${this.apiUrl}/printer/print`, {
+      const response = await fetch(`${this.printUrl}/printer/print`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +210,7 @@ class UnifiedPrinterService {
 
       // Executar teste de impressão
       // console.log(`🖨️ [Test] Executando teste de impressão...`);
-      const response = await fetch(`${this.apiUrl}/printer/test/${printerId}`, {
+      const response = await fetch(`${this.printUrl}/printer/test/${printerId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +248,7 @@ class UnifiedPrinterService {
    */
   async getStatus(): Promise<PrinterStatus> {
     try {
-      const response = await fetch(`${this.apiUrl}/printer/status`, {
+      const response = await fetch(`${this.printUrl}/printer/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

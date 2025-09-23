@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as escpos from 'escpos';
-import * as USB from 'escpos-usb';
+// import * as escpos from 'escpos';
+// import * as USB from 'escpos-usb';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as os from 'os';
@@ -84,17 +84,21 @@ export class PrinterService {
 
   private async detectUSBPrinters(): Promise<SystemPrinter[]> {
     try {
-      const devices = await USB.findPrinter();
-      this.logger.log(`Detectadas ${devices.length} impressoras USB via escpos`);
+      // USB dependencies não disponíveis na VPS
+      this.logger.warn('USB dependencies não disponíveis na VPS');
+      return [];
       
-      return devices.map((device: any) => ({
-        name: device.deviceDescriptor?.iProduct || 'Impressora USB ESC/POS',
-        vendorId: device.deviceDescriptor?.idVendor,
-        productId: device.deviceDescriptor?.idProduct,
-        manufacturer: device.deviceDescriptor?.iManufacturer || 'Desconhecido',
-        platform: 'USB-ESCPOS',
-        interface: 'USB',
-      }));
+      // const devices = await USB.findPrinter();
+      // this.logger.log(`Detectadas ${devices.length} impressoras USB via escpos`);
+      // 
+      // return devices.map((device: any) => ({
+      //   name: device.deviceDescriptor?.iProduct || 'Impressora USB ESC/POS',
+      //   vendorId: device.deviceDescriptor?.idVendor,
+      //   productId: device.deviceDescriptor?.idProduct,
+      //   manufacturer: device.deviceDescriptor?.iManufacturer || 'Desconhecido',
+      //   platform: 'USB-ESCPOS',
+      //   interface: 'USB',
+      // }));
     } catch (error) {
       this.logger.warn('Erro ao detectar impressoras USB:', error.message);
       return [];
@@ -352,9 +356,9 @@ export class PrinterService {
       // Método padrão ESC/POS USB (somente para Windows/macOS)
       try {
         if (config.vendorId && config.productId) {
-          this.device = new USB(config.vendorId, config.productId);
+          // this.device = new USB(config.vendorId, config.productId);
         } else {
-          this.device = new USB();
+          // this.device = new USB();
         }
       } catch (usbError) {
         this.logger.warn('Erro ao inicializar USB ESC/POS, usando método Linux direto:', usbError.message);
@@ -373,15 +377,15 @@ export class PrinterService {
         }
       }
 
-      escpos.encoding.selectCode(encoding);
+      // escpos.encoding.selectCode(encoding);
       this.logger.log(`Usando encoding: ${encoding} para plataforma: ${platform}`);
 
-      this.printer = new escpos.Printer(this.device, {
-        encoding: encoding,
-        width: config.width || 48,
-      });
+      // this.printer = new escpos.Printer(this.device, {
+      //   encoding: encoding,
+      //   width: config.width || 48,
+      // });
 
-      this.logger.log('Impressora inicializada com sucesso');
+      this.logger.log('Impressora inicializada com sucesso (modo VPS - sem USB)');
       return true;
     } catch (error) {
       this.logger.error('Erro ao inicializar impressora:', error);

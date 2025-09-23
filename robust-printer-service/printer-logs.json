@@ -1,6 +1,30 @@
 {
   "logs": [
     {
+      "timestamp": "2025-09-21T22:23:03.198Z",
+      "level": "info",
+      "message": "IP aprovado: 192.168.1.200",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-21T22:23:02.097Z",
+      "level": "info",
+      "message": "IP rejeitado: 192.168.1.200",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-21T22:23:01.421Z",
+      "level": "info",
+      "message": "IP aprovado: 192.168.1.200",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-21T22:23:01.233Z",
+      "level": "info",
+      "message": "IP rejeitado: 192.168.1.200",
+      "data": {}
+    },
+    {
       "timestamp": "2025-09-21T22:19:04.969Z",
       "level": "info",
       "message": "Teste de impressão executado",
@@ -37,5 +61,5 @@
       "data": {}
     }
   ],
-  "lastUpdated": "2025-09-21T22:19:04.969Z"
+  "lastUpdated": "2025-09-21T22:23:03.198Z"
 }

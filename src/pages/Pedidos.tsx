@@ -43,6 +43,8 @@ import { useToast } from '../hooks/use-toast';
 import { Order } from '../types/orders';
 import { PrinterSetup } from '../components/PrinterSetup';
 import { useUnifiedPrinter } from '../hooks/useUnifiedPrinter';
+import { useElectronPrinter } from '../hooks/useElectronPrinter';
+import { USBPrinterManager } from '../components/USBPrinterManager';
 import { useOrders } from '../hooks/useOrders';
 import { CustomLayoutService } from '../services/customLayoutService';
 import { dynamicPrintService } from '../services/dynamicPrintService';
@@ -95,7 +97,7 @@ const Pedidos = () => {
     tipo_pagamento: ''
   });
   
-  // Hook unificado para impressão
+  // Hook unificado para impressão (VPS)
   const { 
     printing,
     printingOrderId, 
@@ -108,6 +110,9 @@ const Pedidos = () => {
     printOrder,
     checkStatus 
   } = useUnifiedPrinter();
+  
+  // Hook para impressão USB direta (Electron)
+  const electronPrinter = useElectronPrinter();
   
   // Estados adicionais para controle da UI de impressão
   const [printerConnected, setPrinterConnected] = useState<boolean>(false);
@@ -416,11 +421,47 @@ PAGAMENTO: {tipo_pagamento}`;
 
   // Função para imprimir pedido com layout dinâmico
   const handlePrintOrder = useCallback(async (order: Order, printerId?: string, layoutId?: string): Promise<boolean> => {
+    
+    // 🖨️ PRIORIDADE 1: Usar impressão USB direta se disponível (Electron)
+    if (electronPrinter.isElectron && electronPrinter.isReady) {
+      console.log('🖨️ Usando impressão USB direta (Electron)');
+      
+      try {
+        const result = await electronPrinter.printOrder(order);
+        
+        if (result.success) {
+          // Marcar como impresso no banco
+          try {
+            await updatePrintStatus(order.id, true);
+            toast({
+              title: "✅ Impresso via USB!",
+              description: `Pedido #${order.id} foi impresso diretamente na impressora`,
+            });
+            return true;
+          } catch (statusError) {
+            console.error('Erro ao atualizar status:', statusError);
+            return true; // Impressão funcionou mesmo com erro de status
+          }
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        console.error('❌ Erro na impressão USB:', error);
+        toast({
+          title: "❌ Falha na impressão USB",
+          description: "Tentando método alternativo via VPS...",
+          variant: "destructive"
+        });
+        // Continuar para impressão via VPS como fallback
+      }
+    }
+    
+    // 🌐 FALLBACK: Usar impressão via VPS (método original)
     const printerToUse = printerId || selectedPrinter;
     if (!printerToUse) {
       toast({
         title: "ℹ️ Configuração necessária",
-        description: "Configure suas preferências de impressão para continuar.",
+        description: "Configure suas preferências de impressão ou conecte uma impressora USB",
         variant: "default",
       });
       return false;
@@ -431,10 +472,9 @@ PAGAMENTO: {tipo_pagamento}`;
       const layoutToUse = layoutId || selectedLayoutIds[order.id];
       
       toast({
-        title: "🖨️ Imprimindo com Layout Dinâmico...",
+        title: "🖨️ Imprimindo via VPS...",
         description: `Enviando pedido #${order.id} para impressão${layoutToUse ? ' com layout personalizado' : ''}`,
       });
-
 
       // Usar o sistema de impressão dinâmica
       const success = await printOrder(order, printerToUse, undefined, layoutToUse);

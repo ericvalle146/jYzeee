@@ -30,8 +30,8 @@ function createWindow() {
     autoHideMenuBar: false // Mostrar menu para navegação
   });
 
-  // 🚀 APLICAÇÃO PRINCIPAL - Carregar frontend React
-  const startUrl = isDev ? 'http://localhost:8081' : `file://${path.join(__dirname, 'dist/index.html')}`;
+  // 🚀 APLICAÇÃO PRINCIPAL - Carregar frontend da VPS (produção) ou local (desenvolvimento)
+  const startUrl = isDev ? 'http://localhost:8081' : 'https://jyze.space';
   
   mainWindow.loadURL(startUrl);
 

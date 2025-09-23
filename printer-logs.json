@@ -1,0 +1,224 @@
+{
+  "logs": [
+    {
+      "timestamp": "2025-09-23T12:46:39.868Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: 5808L-V2024",
+          "printer": "5808L-V2024",
+          "output": "id de requisição é 5808L-V2024-74 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:46:08.440Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:43:31.462Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:41:00.277Z",
+      "level": "info",
+      "message": "Impressoras atualizadas",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-23T12:40:51.610Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:40:22.984Z",
+      "level": "info",
+      "message": "Teste da impressora: SISTEMA_PADRAO",
+      "data": {
+        "result": {
+          "success": false,
+          "message": "Erro ao imprimir em SISTEMA_PADRAO: Command failed: lp -d \"SISTEMA_PADRAO\" \"temp_print_1758631222853.txt\"\nlp: Error - The printer or class does not exist.\n",
+          "printer": "SISTEMA_PADRAO"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:40:04.035Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: 5808L-V2024",
+          "printer": "5808L-V2024",
+          "output": "id de requisição é 5808L-V2024-72 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:40:00.286Z",
+      "level": "info",
+      "message": "Teste da impressora: 5808L-V2024",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: 5808L-V2024",
+          "printer": "5808L-V2024",
+          "output": "id de requisição é 5808L-V2024-71 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:39:48.559Z",
+      "level": "info",
+      "message": "Teste da impressora: 5808L-V2024",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: 5808L-V2024",
+          "printer": "5808L-V2024",
+          "output": "id de requisição é 5808L-V2024-70 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-23T12:39:35.428Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:58:43.982Z",
+      "level": "success",
+      "message": "✅ Impressão realizada: Impressão enviada para: 5808L-V2024",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-22T21:58:43.969Z",
+      "level": "info",
+      "message": "Iniciando impressão para pedido: 888",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-22T21:58:43.969Z",
+      "level": "info",
+      "message": "Comando de impressão recebido de IP: ::1",
+      "data": {
+        "clientIP": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:58:34.236Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: 5808L-V2024",
+          "printer": "5808L-V2024",
+          "output": "id de requisição é 5808L-V2024-68 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:58:26.293Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:56:02.529Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: termica",
+          "printer": "termica",
+          "output": "id de requisição é termica-65 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:55:55.695Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:53:41.431Z",
+      "level": "success",
+      "message": "✅ Impressão realizada: Impressão enviada para: termica",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-22T21:53:41.416Z",
+      "level": "info",
+      "message": "Iniciando impressão para pedido: 999",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-09-22T21:53:41.415Z",
+      "level": "info",
+      "message": "Comando de impressão recebido de IP: ::1",
+      "data": {
+        "clientIP": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:53:30.597Z",
+      "level": "info",
+      "message": "Teste de impressão executado",
+      "data": {
+        "result": {
+          "success": true,
+          "message": "Impressão enviada para: termica",
+          "printer": "termica",
+          "output": "id de requisição é termica-61 (1 arquivo(s))\n"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-09-22T21:53:23.548Z",
+      "level": "info",
+      "message": "JYZE.AI Desktop iniciado",
+      "data": {
+        "port": 3000,
+        "platform": "linux",
+        "printers": 0
+      }
+    }
+  ],
+  "lastUpdated": "2025-09-23T12:46:39.868Z"
+}
