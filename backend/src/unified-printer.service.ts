@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as os from 'os';
 
 const execAsync = promisify(exec);
@@ -23,6 +24,7 @@ export interface PrintResult {
   message: string;
   printerId?: string;
   error?: string;
+  authUrl?: string;
 }
 
 @Injectable()
@@ -294,37 +296,11 @@ export class UnifiedPrinterService {
         };
       }
 
-      // Se impressora está inativa, retornar erro em vez de ativar automaticamente
-      if (printer.status === 'inactive') {
-        this.logger.warn(`⚠️ Impressora inativa: ${printer.name}`);
-        return {
-          success: false,
-          message: `Impressora ${printer.name} está inativa. Use o botão 'Ativar' para habilitá-la manualmente.`,
-          error: 'PRINTER_INACTIVE'
-        };
-      }
+      // 🚀 IMPRESSÃO DIRETA: Usar exatamente a lógica que funcionou para Eric!
+      this.logger.log(`🖨️ Usando comando que funcionou: lp -d ${printer.name} -o raw`);
 
-      // 🚀 NOVA FUNCIONALIDADE: SEMPRE tentar serviço local primeiro
-      this.logger.log(`🔗 Tentando serviço local para pedido ${orderData.id}`);
-      const localPrintResult = await this.sendToLocalPrinterService(orderData, printText, clientIP);
-      if (localPrintResult.success) {
-        this.logger.log(`✅ Pedido ${orderData.id} enviado para impressão local`);
-        return localPrintResult;
-      } else if (localPrintResult.error === 'IP_NOT_AUTHORIZED') {
-        this.logger.log(`⚠️ IP não autorizado: ${localPrintResult.message}`);
-        return localPrintResult;
-      } else {
-        this.logger.log(`⚠️ Serviço local não disponível: ${localPrintResult.message}`);
-      }
-
-      // Fallback: Imprimir localmente na VPS (se houver impressora)
-      let printResult: PrintResult;
-
-      if (printer.type === 'usb' && printer.devicePath) {
-        printResult = await this.printToUSBDevice(printer.devicePath, printText);
-      } else {
-        printResult = await this.printToSystemPrinter(printer.name, printText);
-      }
+      // SEMPRE usar a impressora do sistema (a que funcionou)
+      const printResult = await this.printToSystemPrinter(printer.name, printText);
 
       if (printResult.success) {
         this.logger.log(`✅ Pedido ${orderData.id} impresso com sucesso`);
@@ -376,7 +352,7 @@ export class UnifiedPrinterService {
               userName: orderData.nome_cliente || 'Usuário',
               timestamp: new Date().toISOString()
             }),
-            timeout: 5000 // 5 segundos de timeout
+            // timeout: 5000 // 5 segundos de timeout (removido - não suportado no fetch)
           });
 
           if (response.ok) {
@@ -451,21 +427,35 @@ export class UnifiedPrinterService {
   private async printToSystemPrinter(printerName: string, printText: string): Promise<PrintResult> {
     try {
       // Criar arquivo temporário
-      const tempFile = `/tmp/print_${Date.now()}.txt`;
-      fs.writeFileSync(tempFile, printText);
+      const tempFile = `temp_print_${Date.now()}.txt`;
+      const tempFilePath = path.join(process.cwd(), tempFile);
+      fs.writeFileSync(tempFilePath, printText, 'utf8');
 
-      // Imprimir usando lp
-      await execAsync(`lp -d "${printerName}" "${tempFile}"`);
+      // Imprimir usando lp com modo RAW (mesma lógica que funcionou)
+      const lpCommand = `lp -d "${printerName}" -o raw "${tempFile}"`;
+      this.logger.log(`⚡ Executando: ${lpCommand}`);
       
-      // Limpar arquivo temporário
-      fs.unlinkSync(tempFile);
+      const { stdout } = await execAsync(lpCommand, { cwd: process.cwd() });
+      this.logger.log(`✅ Impressão enviada para: ${printerName}`);
+      this.logger.log(`📋 Resposta: ${stdout.trim()}`);
+      
+      // Limpar arquivo temporário após delay
+      setTimeout(() => {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (cleanupError) {
+          this.logger.warn(`⚠️ Falha ao limpar arquivo temporário: ${cleanupError.message}`);
+        }
+      }, 2000);
 
       return {
         success: true,
-        message: `Impresso com sucesso na impressora ${printerName}`
+        message: `Impressão enviada com sucesso para: ${printerName}`,
+        printerId: printerName
       };
 
     } catch (error) {
+      this.logger.error(`❌ Erro ao imprimir em ${printerName}: ${error.message}`);
       return {
         success: false,
         message: `Erro ao imprimir na impressora ${printerName}`,

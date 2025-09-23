@@ -190,14 +190,9 @@ class UnifiedPrinterService {
       //   canActivate: printer.canActivate
       // });
 
-      // Se impressora está inativa, retornar erro em vez de ativar automaticamente
+      // Imprimir mesmo se estiver "inativa" (funciona com lp -o raw)
       if (printer.status === 'inactive') {
-        console.warn(`⚠️ [Test] Impressora inativa: ${printer.name}`);
-        return {
-          success: false,
-          message: `Impressora ${printer.name} está inativa. Use o botão 'Ativar' para habilitá-la manualmente antes de testar.`,
-          error: 'PRINTER_INACTIVE'
-        };
+        console.warn(`⚠️ [Test] Impressora inativa: ${printer.name} - tentando imprimir mesmo assim`);
       }
 
       // Executar teste de impressão

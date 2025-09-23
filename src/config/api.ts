@@ -7,9 +7,9 @@
 
 // URLs BASE
 export const API_CONFIG = {
-  // Backend principal
-  BACKEND_URL: 'https://api.jyze.space',
-  BACKEND_API: 'https://api.jyze.space',
+  // Backend principal (LOCAL)
+  BACKEND_URL: 'http://localhost:3002',
+  BACKEND_API: 'http://localhost:3002',
   
   // Frontend 
   FRONTEND_URL: 'https://jyze.space',
