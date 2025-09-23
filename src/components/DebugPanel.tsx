@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { API_CONFIG } from '@/config/api';
 
 export function DebugPanel() {
   const [customerData, setCustomerData] = useState<any>(null);
@@ -9,10 +10,9 @@ export function DebugPanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const API_URL = 'https://api.jyze.space';
     try {
       // Fetch customer data
-      const customerResponse = await fetch(`${API_URL}/customers/stats`);
+      const customerResponse = await fetch(`${API_CONFIG.BACKEND_API}/customers/stats`);
       const customerResult = await customerResponse.json();
       setCustomerData({
         status: customerResponse.status,
@@ -21,7 +21,7 @@ export function DebugPanel() {
       });
 
       // Fetch sales data
-      const salesResponse = await fetch(`${API_URL}/sales/stats`);
+      const salesResponse = await fetch(`${API_CONFIG.BACKEND_API}/sales/stats`);
       const salesResult = await salesResponse.json();
       setSalesData({
         status: salesResponse.status,

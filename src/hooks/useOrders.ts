@@ -12,8 +12,7 @@ interface UseOrdersReturn {
   updatePrintStatus: (orderId: number, impresso: boolean) => Promise<Order>;
 }
 
-// Configurar API URL
-// PADRONIZAÇÃO DE PORTA - SEMPRE 3001
+// Configurar API URL - SEMPRE api.jyze.space (exceto impressão)
 const API_URL = 'https://api.jyze.space';
 
 export const useOrders = (): UseOrdersReturn => {

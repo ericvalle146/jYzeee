@@ -5,14 +5,18 @@
  * N8N e Evolution API são configurados via .env no backend.
  */
 
+// Detectar ambiente dinamicamente
+const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+const isElectron = typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer';
+
 // URLs BASE
 export const API_CONFIG = {
-  // Backend principal (LOCAL)
-  BACKEND_URL: 'http://localhost:3002',
-  BACKEND_API: 'http://localhost:3002',
+  // Backend principal - DINÂMICO baseado no ambiente
+  BACKEND_URL: isProduction && !isElectron ? 'https://api.jyze.space' : 'http://localhost:3002',
+  BACKEND_API: isProduction && !isElectron ? 'https://api.jyze.space' : 'http://localhost:3002',
   
   // Frontend 
-  FRONTEND_URL: 'https://jyze.space',
+  FRONTEND_URL: isProduction ? 'https://jyze.space' : 'http://localhost:8081',
   
   // Timeouts padrão
   DEFAULT_TIMEOUT: 10000, // 10 segundos
