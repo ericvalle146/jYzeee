@@ -28,7 +28,7 @@ export interface PrintResult {
 export class UnifiedPrinterService {
   private readonly logger = new Logger(UnifiedPrinterService.name);
   private readonly SSH_USER = process.env.SSH_USER || 'eric';
-  private readonly LOCAL_PRINTER_IP = process.env.SSH_HOST || 'localhost';
+  private readonly LOCAL_PRINTER_IP = process.env.SSH_HOST || 'host.docker.internal';
   private readonly SSH_PORT = process.env.SSH_PORT || '2222';
   private readonly LOCAL_PRINTER_NAME = process.env.PRINTER_NAME || '5808L-V2024';
   private readonly SSH_PASSWORD = process.env.SSH_PASSWORD || 'eqrwiecr';
