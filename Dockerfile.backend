@@ -10,7 +10,11 @@ RUN apk add --no-cache \
     sshpass \
     curl \
     bash \
+    openssl \
     && rm -rf /var/cache/apk/*
+
+# Corrigir problema de versão OpenSSL
+RUN echo "export OPENSSL_CONF=" >> /etc/profile
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs && \
@@ -67,6 +71,9 @@ if [ -z "\$SUPABASE_KEY" ]; then
     echo "❌ ERRO: SUPABASE_KEY não configurada!"
     exit 1
 fi
+
+# Configurar OpenSSL para evitar erros de versão
+export OPENSSL_CONF=""
 
 # Testar conexão SSH para impressão (se configurada)
 if [ -n "\$SSH_HOST" ] && [ -n "\$SSH_USER" ] && [ -n "\$SSH_PASSWORD" ]; then
