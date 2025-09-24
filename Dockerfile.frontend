@@ -9,13 +9,9 @@ WORKDIR /app
 
 # Copiar package files
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
-
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
 
 # Instalar dependências
-RUN pnpm install --no-frozen-lockfile
+RUN npm ci
 
 # Copiar código fonte
 COPY . .
@@ -41,7 +37,7 @@ ENV VITE_EVOLUTION_API_URL=https://evolution.jyze.space/
 ENV VITE_EVOLUTION_API_KEY=b7caaa547bb4c48ec46d127601a81451
 ENV VITE_WHATSAPP_INSTANCE_NAME=N8N
 
-RUN pnpm run build
+RUN npm run build
 
 # Estágio 2: Servir com Nginx
 FROM nginx:alpine

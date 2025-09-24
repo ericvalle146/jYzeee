@@ -22,14 +22,17 @@ WORKDIR /app
 # Copiar package files
 COPY backend/package*.json ./
 
-# Instalar dependências
-RUN npm ci --only=production && npm cache clean --force
+# Instalar todas as dependências (incluindo dev para o build)
+RUN npm ci && npm cache clean --force
 
 # Copiar código fonte do backend
 COPY backend/ ./
 
 # Build da aplicação
 RUN npm run build
+
+# Remover dependências de desenvolvimento após o build
+RUN npm prune --production
 
 # Criar diretórios necessários
 RUN mkdir -p /app/logs /app/uploads /tmp/jyze-print-queue
