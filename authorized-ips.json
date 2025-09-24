@@ -1,0 +1,20 @@
+{
+  "ips": [
+    {
+      "ip": "::1",
+      "name": "Eric",
+      "status": "pending",
+      "firstRequest": "2025-09-24T11:07:30.014Z",
+      "lastActivity": "2025-09-24T11:07:30.014Z"
+    },
+    {
+      "ip": "192.168.3.5",
+      "name": "Eric - Teste Remoto",
+      "status": "approved",
+      "firstRequest": "2025-09-24T11:15:36.035Z",
+      "lastActivity": "2025-09-24T11:32:18.834Z",
+      "approvedAt": "2025-09-24T11:16:16.136Z"
+    }
+  ],
+  "lastUpdated": "2025-09-24T11:32:18.834Z"
+}

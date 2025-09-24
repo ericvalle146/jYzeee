@@ -42,8 +42,7 @@ import { useToast } from '../hooks/use-toast';
 // useGlobalAutoPrint removido - não precisamos mais dos controles locais
 import { Order } from '../types/orders';
 import { PrinterSetup } from '../components/PrinterSetup';
-import { useUnifiedPrinter } from '../hooks/useUnifiedPrinter';
-import { useElectronPrinter } from '../hooks/useElectronPrinter';
+import { useIPPrinter } from '../hooks/useIPPrinter';
 import { USBPrinterManager } from '../components/USBPrinterManager';
 import { useOrders } from '../hooks/useOrders';
 import { CustomLayoutService } from '../services/customLayoutService';
@@ -97,26 +96,18 @@ const Pedidos = () => {
     tipo_pagamento: ''
   });
   
-  // Hook unificado para impressão (VPS)
+  // 🌐 NOVO SISTEMA: Hook para impressão VIA IP
   const { 
     printing,
-    printingOrderId, 
-    printers, 
-    selectedPrinter, 
-    isDetecting,
-    detectPrinters,
-    selectPrinter,
-    activatePrinter,
-    printOrder,
-    checkStatus 
-  } = useUnifiedPrinter();
-  
-  // Hook para impressão USB direta (Electron)
-  const electronPrinter = useElectronPrinter();
-  
-  // Estados adicionais para controle da UI de impressão
-  const [printerConnected, setPrinterConnected] = useState<boolean>(false);
-  const [printerStatus, setPrinterStatus] = useState<'idle' | 'detecting' | 'ready' | 'error'>('idle');
+    printingOrderId,
+    serverStatus,
+    checkServerStatus,
+    testPrint,
+    printOrder: printOrderViaIP,
+    isAvailable,
+    serverURL,
+    serverIP
+  } = useIPPrinter();
   
   // Estados para controle de auto-impressão
   const [lastOrderCount, setLastOrderCount] = useState<number>(0);
@@ -143,40 +134,11 @@ const Pedidos = () => {
 
   // Função removida - não precisamos mais de teste automático
 
-  // Sincronizar estados da UI com o hook unificado
+  // 🌐 SISTEMA VIA IP: Verificar status na inicialização
   useEffect(() => {
-    // Atualizar status baseado no hook
-    if (isDetecting) {
-      setPrinterStatus('detecting');
-    } else if (printers.length > 0) {
-      setPrinterStatus('ready');
-      // Verificar se a impressora selecionada está online
-      if (selectedPrinter) {
-        const printer = printers.find(p => p.id === selectedPrinter);
-        setPrinterConnected(printer?.status === 'online');
-      }
-    } else {
-      setPrinterStatus('idle');
-      setPrinterConnected(false);
-    }
-  }, [isDetecting, printers, selectedPrinter]);
-
-  // Detectar impressoras na inicialização
-  useEffect(() => {
-    const initDetectPrinters = async () => {
-      try {
-        await detectPrinters();
-      } catch (error) {
-        console.error('Erro ao detectar impressoras:', error);
-        setPrinterStatus('error');
-      }
-    };
-
-    // Detectar impressoras apenas uma vez na inicialização
-    if (printers.length === 0 && !isDetecting) {
-      initDetectPrinters();
-    }
-  }, [detectPrinters, printers.length, isDetecting]);
+    // Verificar status do servidor de impressão via IP
+    checkServerStatus();
+  }, [checkServerStatus]);
 
   // useEffect removido - não precisamos mais de teste automático repetitivo
 
@@ -357,12 +319,12 @@ const Pedidos = () => {
     });
   };
 
-  // Função para detectar impressoras (wrapper para o hook)
-  const handleDetectPrinters = async () => {
+  // 🌐 Função para testar servidor via IP
+  const handleTestIPPrinter = async () => {
     try {
-      await detectPrinters();
+      await testPrint();
     } catch (error) {
-      console.error('Erro ao detectar impressoras:', error);
+      console.error('Erro ao testar impressão via IP:', error);
     }
   };
 
@@ -419,80 +381,39 @@ PAGAMENTO: {tipo_pagamento}`;
     return formatted;
   }, []);
 
-  // Função para imprimir pedido com layout dinâmico
-  const handlePrintOrder = useCallback(async (order: Order, printerId?: string, layoutId?: string): Promise<boolean> => {
-    
-    // 🖨️ PRIORIDADE 1: Usar impressão USB direta se disponível (Electron)
-    if (electronPrinter.isElectron && electronPrinter.isReady) {
-      console.log('🖨️ Usando impressão USB direta (Electron)');
-      
-      try {
-        const result = await electronPrinter.printOrder(order);
-        
-        if (result.success) {
-          // Marcar como impresso no banco
-          try {
-            await updatePrintStatus(order.id, true);
-            toast({
-              title: "✅ Impresso via USB!",
-              description: `Pedido #${order.id} foi impresso diretamente na impressora`,
-            });
-            return true;
-          } catch (statusError) {
-            console.error('Erro ao atualizar status:', statusError);
-            return true; // Impressão funcionou mesmo com erro de status
-          }
-        } else {
-          throw new Error(result.message);
-        }
-      } catch (error) {
-        console.error('❌ Erro na impressão USB:', error);
-        toast({
-          title: "❌ Falha na impressão USB",
-          description: "Tentando método alternativo via VPS...",
-          variant: "destructive"
-        });
-        // Continuar para impressão via VPS como fallback
-      }
-    }
-    
-    // 🌐 FALLBACK: Usar impressão via VPS (método original)
-    const printerToUse = printerId || selectedPrinter;
-    if (!printerToUse) {
-      toast({
-        title: "ℹ️ Configuração necessária",
-        description: "Configure suas preferências de impressão ou conecte uma impressora USB",
-        variant: "default",
-      });
-      return false;
-    }
-
+  // 🌐 NOVA FUNÇÃO: Impressão EXCLUSIVAMENTE via IP
+  const handlePrintOrder = useCallback(async (order: Order): Promise<boolean> => {
     try {
-      // Usar layout específico se fornecido, senão usar o padrão
-      const layoutToUse = layoutId || selectedLayoutIds[order.id];
+      console.log(`🌐 Iniciando impressão via IP para pedido #${order.id}`);
       
-      toast({
-        title: "🖨️ Imprimindo via VPS...",
-        description: `Enviando pedido #${order.id} para impressão${layoutToUse ? ' com layout personalizado' : ''}`,
-      });
+      // Verificar se servidor está disponível
+      if (!isAvailable) {
+        toast({
+          title: "🌐 Servidor indisponível",
+          description: `Servidor de impressão (${serverIP}) não está respondendo. Verifique se o serviço está rodando.`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        return false;
+      }
 
-      // Usar o sistema de impressão dinâmica
-      const success = await printOrder(order, printerToUse, undefined, layoutToUse);
+      // Imprimir via IP
+      const result = await printOrderViaIP(order);
       
-      if (success) {
-        // ✅ NOVA FUNCIONALIDADE: Marcar automaticamente como impresso após impressão bem-sucedida
+      if (result.success) {
+        // ✅ Marcar automaticamente como impresso no banco
         try {
           await updatePrintStatus(order.id, true);
           toast({
-            title: "✅ Impresso com sucesso!",
-            description: `Pedido #${order.id} foi marcado como impresso`,
+            title: "✅ Impresso via IP!",
+            description: `Pedido #${order.id} foi impresso e marcado como concluído`,
           });
           return true;
         } catch (statusError) {
-          console.error('Erro ao atualizar status de impressão:', statusError);
-          // Não bloquear a impressão se houver erro no banco
+          console.error('Erro ao atualizar status:', statusError);
+          // Não bloquear - impressão funcionou
           toast({
-            title: "🖨️ Impressão realizada",
+            title: "🖨️ Impressão realizada via IP",
             description: "Pedido foi impresso! (Status será atualizado em breve)",
             variant: "default",
           });
@@ -503,71 +424,44 @@ PAGAMENTO: {tipo_pagamento}`;
               await updatePrintStatus(order.id, true);
               toast({
                 title: "✅ Status atualizado",
-                description: `Status de impressão do pedido #${order.id} foi atualizado`,
+                description: `Status do pedido #${order.id} foi atualizado`,
               });
             } catch (retryError) {
               console.error('Erro na segunda tentativa:', retryError);
             }
           }, 2000);
-          return true; // A impressão funcionou, mesmo com erro de status
+          return true;
         }
       } else {
-        toast({
-          title: "❌ Falha na impressão",
-          description: "A impressão não foi realizada com sucesso",
-          variant: "destructive",
-        });
+        // Verificar se precisa de autorização IP
+        if (result.needsAuth) {
+          toast({
+            title: "🔐 Autorização necessária",
+            description: `Acesse ${result.authUrl} para autorizar impressão via IP`,
+            variant: "destructive",
+            duration: 10000,
+          });
+        } else {
+          toast({
+            title: "❌ Falha na impressão via IP",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
         return false;
       }
       
     } catch (error) {
-      console.error('Erro na impressão:', error);
+      console.error('Erro na impressão via IP:', error);
       
-      const errorMessage = error instanceof Error ? error.message : "Falha ao imprimir o pedido";
-      
-      // Mostrar toast com orientações específicas
-      if (errorMessage.includes('desligada') || errorMessage.includes('desconectada')) {
-        toast({
-          title: "🔌 Impressora Offline",
-          description: (
-            <div className="space-y-2">
-              <p>A impressora parece estar desligada ou desconectada.</p>
-              <p className="text-sm font-medium">✅ Verifique se:</p>
-              <ul className="text-xs list-disc list-inside space-y-1">
-                <li>A impressora está ligada</li>
-                <li>O cabo USB está conectado</li>
-                <li>A impressora não está em modo de economia</li>
-              </ul>
-            </div>
-          ),
-          variant: "destructive",
-          duration: 8000,
-        });
-      } else if (errorMessage.includes('ocupada')) {
-        toast({
-          title: "⏳ Impressora Ocupada",
-          description: "A impressora está processando outro trabalho. Tente novamente em alguns segundos.",
-          variant: "destructive",
-          duration: 5000,
-        });
-      } else if (errorMessage.includes('Servidor de impressão offline')) {
-        toast({
-          title: "🌐 Servidor Offline",
-          description: "O serviço de impressão não está rodando. Verifique se o backend está ativo.",
-          variant: "destructive",
-          duration: 6000,
-        });
-      } else {
-        toast({
-          title: "❌ Erro na Impressão",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 6000,
-        });
-      }
+      toast({
+        title: "❌ Erro na impressão via IP",
+        description: error.message || "Falha ao conectar com servidor de impressão",
+        variant: "destructive",
+      });
       return false;
     }
-  }, [selectedPrinter, printOrder, updatePrintStatus, toast, selectedLayoutIds]);
+  }, [printOrderViaIP, updatePrintStatus, toast, isAvailable, serverIP]);
 
   // Funções para controlar o seletor de layout
   const toggleLayoutSelector = useCallback((orderId: number) => {
@@ -587,7 +481,8 @@ PAGAMENTO: {tipo_pagamento}`;
   const handlePrintWithLayout = useCallback(async (orderId: number, layoutId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (order) {
-      const success = await handlePrintOrder(order, undefined, layoutId);
+      // Nova função só aceita um parâmetro (order)
+      const success = await handlePrintOrder(order);
       if (success) {
         // Fechar o seletor após impressão bem-sucedida
         setShowLayoutSelector(prev => ({
@@ -1196,7 +1091,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
         </div>
       </div>
 
-      {/* Seção de Status das Impressoras */}
+      {/* 🌐 Seção de Status do Servidor de Impressão via IP */}
       <div className="px-6 py-4 border-b border-border/30">
         <Card className="bg-gradient-to-r from-background to-background/80 border-0 shadow-xl">
           <CardContent className="p-6">
@@ -1205,111 +1100,76 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                 <div className="flex items-center gap-3">
                   <Printer className="h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="text-lg font-semibold">Status das Impressoras</h3>
+                    <h3 className="text-lg font-semibold">Servidor de Impressão via IP</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {serverURL} {serverStatus?.printerName && `• ${serverStatus.printerName}`}
+                    </p>
                   </div>
                 </div>
                 
-                {/* Badge de Status */}
+                {/* Badge de Status do Servidor */}
                 <Badge 
                   className={`px-4 py-2 text-sm font-medium ${
-                    printerStatus === 'ready' && printerConnected ? 'bg-green-500 text-white' :
-                    printerStatus === 'ready' && !printerConnected ? 'bg-orange-500 text-white' :
-                    printerStatus === 'detecting' ? 'bg-yellow-500 text-white' :
-                    printerStatus === 'error' ? 'bg-red-500 text-white' :
-                    'bg-gray-500 text-white'
+                    isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                   }`}
                 >
-                  {printerStatus === 'ready' && printerConnected && <><CheckCircle className="h-4 w-4 mr-1" /> Pronta</>}
-                  {printerStatus === 'ready' && !printerConnected && selectedPrinter && <><AlertCircle className="h-4 w-4 mr-1" /> Offline</>}
-                  {printerStatus === 'ready' && !selectedPrinter && <><Zap className="h-4 w-4 mr-1" /> Selecione Impressora</>}
-                  {printerStatus === 'detecting' && <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Detectando...</>}
-                  {printerStatus === 'error' && <><AlertCircle className="h-4 w-4 mr-1" /> Erro</>}
-                  {printerStatus === 'idle' && <><Zap className="h-4 w-4 mr-1" /> Aguardando</>}
+                  {isAvailable ? (
+                    <><CheckCircle className="h-4 w-4 mr-1" /> Online</>
+                  ) : (
+                    <><AlertCircle className="h-4 w-4 mr-1" /> Offline</>
+                  )}
                 </Badge>
+
+                {/* Informações do Servidor */}
+                {serverStatus && (
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span>IPs Autorizados: {serverStatus.authorizedIPs}</span>
+                    {serverStatus.pendingIPs > 0 && (
+                      <span className="text-yellow-600">Pendentes: {serverStatus.pendingIPs}</span>
+                    )}
+                    {serverStatus.platform && (
+                      <span>Plataforma: {serverStatus.platform}</span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded ${isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {isAvailable ? 'CONECTADO' : 'DESCONECTADO'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Seletor de Impressora */}
-                {printers.length > 0 && (
-                  <div className="flex items-center gap-2 hidden">
-                    <Label htmlFor="printer-select" className="text-sm font-medium">Impressora:</Label>
-                    <Select value={selectedPrinter || ''} onValueChange={selectPrinter}>
-                      <SelectTrigger className="w-64">
-                        <SelectValue placeholder="Selecione uma impressora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {printers.map((printer, index) => {
-                          // Usar a mesma lógica de identificação robusta
-                          let printerKey = '';
-                          if (printer.path) {
-                            printerKey = printer.path;
-                          } else if (printer.name && typeof printer.name === 'string') {
-                            printerKey = printer.name;
-                          } else if (printer.vendorId && printer.productId) {
-                            printerKey = `${printer.vendorId}:${printer.productId}`;
-                          } else {
-                            printerKey = String(printer.name || `printer-${index}`);
-                          }
-                          
-                          const isSelected = printerKey === selectedPrinter;
-                          return (
-                            <SelectItem 
-                              key={index} 
-                              value={printerKey}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="relative">
-                                  <Printer className="h-4 w-4" />
-                                  {isSelected && (
-                                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                                      printerConnected ? 'bg-green-500' : 'bg-red-500'
-                                    }`} />
-                                  )}
-                                </div>
-                                <span>
-                                  {printer.name || printer.path || `Impressora ${index + 1}`}
-                                  {printer.platform && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      ({printer.platform})
-                                    </span>
-                                  )}
-                                  {isSelected && (
-                                    <span className={`text-xs ml-2 ${printerConnected ? 'text-green-600' : 'text-red-600'}`}>
-                                      • {printerConnected ? 'Online' : 'Offline'}
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
                 {/* Botões de Ação */}
                 <Button 
-                  onClick={detectPrinters} 
-                  disabled={isDetecting}
+                  onClick={() => checkServerStatus(true)} 
+                  variant="outline"
+                  size="sm"
+                  title="Forçar verificação do servidor de impressão"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Atualizar
+                </Button>
+                
+                <Button 
+                  onClick={handleTestIPPrinter} 
+                  disabled={!isAvailable}
                   variant="outline"
                   size="sm"
                 >
-                  {isDetecting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
-                  {isDetecting ? 'Detectando...' : 'Detectar'}
+                  <Zap className="h-4 w-4 mr-2" />
+                  Testar
                 </Button>
-                
-                {/* Botão Configurar Impressora */}
-                <PrinterSetup>
-                  <Button variant="outline" size="sm" className="hidden">
+
+                {/* Botão para acessar painel de autorização */}
+                {serverURL && (
+                  <Button 
+                    onClick={() => window.open(serverURL, '_blank')}
+                    variant="outline"
+                    size="sm"
+                  >
                     <Settings className="h-4 w-4 mr-2" />
-                    Configurar
+                    Painel
                   </Button>
-                </PrinterSetup>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1521,14 +1381,15 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="h-8 px-2"
+                        className={`h-8 px-2 ${!isAvailable ? 'opacity-50' : ''}`}
                         onClick={() => handlePrintOrder(order)}
-                        disabled={printingOrderId === order.id}
+                        disabled={printingOrderId === order.id || !isAvailable}
+                        title={!isAvailable ? 'Servidor de impressão offline' : 'Imprimir via IP'}
                       >
                         {printingOrderId === order.id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Printer className="h-3 w-3" />
+                          <Printer className={`h-3 w-3 ${!isAvailable ? 'text-red-500' : ''}`} />
                         )}
                       </Button>
                     </div>
@@ -1653,14 +1514,15 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="flex-1 h-8 text-xs"
+                        className={`flex-1 h-8 text-xs ${!isAvailable ? 'opacity-50' : ''}`}
                         onClick={() => handlePrintOrder(order)}
-                        disabled={printingOrderId === order.id}
+                        disabled={printingOrderId === order.id || !isAvailable}
+                        title={!isAvailable ? 'Servidor de impressão offline' : 'Reimprimir via IP'}
                       >
                         {printingOrderId === order.id ? (
                           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                         ) : (
-                          <Printer className="h-3 w-3 mr-1" />
+                          <Printer className={`h-3 w-3 mr-1 ${!isAvailable ? 'text-red-500' : ''}`} />
                         )}
                         Reimprimir
                       </Button>

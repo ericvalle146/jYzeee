@@ -16,18 +16,21 @@ const { promisify } = require('util');
 const fs = require('fs');
 const path = require('path');
 
+// Carregar configurações centralizadas
+const CONFIG = require('../printer.config.js');
+
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 3003;
+
+// Configurações vindas do arquivo de config
+const PORT = CONFIG.network.port;
+const VPS_BACKEND_URL = CONFIG.vps.backendURL;
+const LOCAL_PRINTER_NAME = CONFIG.printer.name;
+const AUTH_FILE = 'authorized-ips.json';
 
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
-
-// Configurações
-const VPS_BACKEND_URL = 'https://api.jyze.space';
-const LOCAL_PRINTER_NAME = 'impressora termica'; // Ajuste para sua impressora
-const AUTH_FILE = 'authorized-ips.json';
 
 // Estrutura de dados para IPs autorizados
 let authorizedIPs = {
@@ -61,6 +64,13 @@ function saveAuthorizedIPs() {
 
 // Verificar se IP está autorizado
 function isIPAuthorized(ip) {
+  // Auto-aprovar IPs da VPS
+  if (CONFIG.isVPSAccess(ip)) {
+    console.log(`✅ IP ${ip} auto-aprovado (VPS)`);
+    return true;
+  }
+  
+  // Verificar lista de IPs autorizados
   return authorizedIPs.ips.some(authorizedIP => 
     authorizedIP.ip === ip && authorizedIP.status === 'approved'
   );
@@ -454,24 +464,35 @@ Se você está vendo isso, o sistema está funcionando!
 // Carregar IPs autorizados na inicialização
 loadAuthorizedIPs();
 
-// Iniciar servidor
-app.listen(PORT, () => {
+// Iniciar servidor - aceita conexões de qualquer IP
+app.listen(PORT, CONFIG.network.bindAddress, () => {
+  const localIP = CONFIG.network.localIP;
+  const vpsIPs = CONFIG.getAllowedVPSIPs();
+  
   console.log(`
 🚀 SERVIÇO LOCAL DE IMPRESSÃO COM AUTENTICAÇÃO INICIADO
 =====================================================
-📍 URL: http://localhost:${PORT}
-🔍 Status: http://localhost:${PORT}/status
-🧪 Teste: POST http://localhost:${PORT}/test-print
-🖨️ Impressão: POST http://localhost:${PORT}/print
+📍 URL Local: http://localhost:${PORT}
+🌐 URL Remota: ${CONFIG.getLocalURL()}
+🔍 Status: ${CONFIG.getLocalURL()}/status
+🧪 Teste: POST ${CONFIG.getLocalURL()}/test-print
+🖨️ Impressão: POST ${CONFIG.getLocalURL()}/print
 
 📋 Configurações:
 - VPS Backend: ${VPS_BACKEND_URL}
 - Impressora Local: ${LOCAL_PRINTER_NAME}
 - Plataforma: ${process.platform}
 - IPs Autorizados: ${authorizedIPs.ips.length}
+- IP da Máquina: ${localIP}
+- IPs VPS Auto-aprovados: ${vpsIPs.join(', ')}
+
+🔒 Segurança:
+- Autenticação por IP: ${CONFIG.security.requireIPAuth ? '✅ ATIVA' : '❌ INATIVA'}
+- Auto-aprovar VPS: ✅ ATIVA
+- Webhook Secret: ${CONFIG.security.webhookSecret !== 'your_webhook_secret_here' ? '✅ CONFIGURADO' : '⚠️ USAR PADRÃO'}
 
 ✅ Aguardando webhooks de impressão...
-✅ Acesse http://localhost:${PORT} para gerenciar permissões
+✅ Acesse ${CONFIG.getLocalURL()} para gerenciar permissões
   `);
 });
 
