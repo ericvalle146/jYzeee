@@ -1,7 +1,0 @@
-
-TESTE ESPECÍFICO - SISTEMA_PADRAO
-Data: 23/09/2025, 09:40:22
-App: JYZE.AI Desktop
-
-Esta impressora está funcionando!
-    

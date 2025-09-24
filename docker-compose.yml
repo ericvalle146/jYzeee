@@ -1,0 +1,117 @@
+# ================================
+# 🐳 DOCKER COMPOSE - JYZE SYSTEM
+# ================================
+# Sistema completo de pedidos com impressão via IP
+
+version: '3.8'
+
+services:
+  # ========================
+  # 🔥 BACKEND API (NestJS)
+  # ========================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: jyze-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    ports:
+      - "3000:3000"
+    volumes:
+      - backend_data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - jyze-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================
+  # 🌐 FRONTEND (React/Vite)
+  # ========================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: jyze-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - jyze-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ========================
+  # 🖨️ PRINT SERVICE (Local)
+  # ========================
+  print-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.print-service
+    container_name: jyze-print-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOCAL_IP=${LOCAL_IP:-192.168.3.5}
+      - LOCAL_PORT=${LOCAL_PORT:-3003}
+      - PRINTER_NAME=${PRINTER_NAME:-5808L-V2024}
+      - VPS_BACKEND_URL=${VPS_BACKEND_URL:-https://api.jyze.space}
+      - VPS_ALLOWED_IPS=${VPS_ALLOWED_IPS:-31.97.162.165}
+      - REQUIRE_IP_AUTH=${REQUIRE_IP_AUTH:-true}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-your_webhook_secret_here}
+    ports:
+      - "3003:3003"
+    volumes:
+      - print_queue:/tmp/jyze-print-queue
+      - ./local-printer-service/authorized-ips.json:/app/authorized-ips.json
+      - /dev:/dev:ro
+      - /etc/cups:/etc/cups:ro
+    privileged: true
+    networks:
+      - jyze-network
+    depends_on:
+      - backend
+
+
+# ========================
+# 📦 VOLUMES
+# ========================
+volumes:
+  backend_data:
+    driver: local
+  print_queue:
+    driver: local
+
+# ========================
+# 🌐 NETWORKS
+# ========================
+networks:
+  jyze-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -8,16 +8,37 @@
 import { Order } from '../types/orders';
 import { PrintResult } from './unifiedPrinterService';
 
-// Importar configurações do sistema
-const PRINTER_CONFIG = {
-  network: {
-    localIP: '192.168.3.5',
-    port: 3003,
-  },
-  getLocalURL(): string {
-    return `http://${this.network.localIP}:${this.network.port}`;
+// Configuração dinâmica baseada no ambiente
+const getPrinterConfig = () => {
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+  const isElectron = typeof window !== 'undefined' && typeof window.process === 'object';
+  
+  if (isProduction && !isElectron) {
+    // Em produção na VPS - Comunicação via IP direto (não domínio)
+    return {
+      network: {
+        localIP: window.location.hostname,
+        port: 3003,
+      },
+      getLocalURL(): string {
+        return `${window.location.protocol}//${window.location.hostname}:3003`;
+      }
+    };
   }
+  
+  // Desenvolvimento local
+  return {
+    network: {
+      localIP: '192.168.3.5',
+      port: 3003,
+    },
+    getLocalURL(): string {
+      return `http://${this.network.localIP}:${this.network.port}`;
+    }
+  };
 };
+
+const PRINTER_CONFIG = getPrinterConfig();
 
 export interface LocalPrintResult {
   success: boolean;

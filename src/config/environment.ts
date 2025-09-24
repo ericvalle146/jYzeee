@@ -8,8 +8,8 @@ export const environment = {
            (window.location.hostname === 'localhost' || 
             window.location.hostname === '127.0.0.1'),
   
-  // URL do servidor de impressão local
-  localPrintServer: 'http://localhost:3000',
+  // URL do servidor de impressão local (porta corrigida)
+  localPrintServer: 'http://localhost:3003',
   
   // Verifica se o servidor local está disponível
   async checkLocalPrintServer(): Promise<boolean> {

@@ -1,0 +1,107 @@
+# ================================
+# 🚀 DOCKERFILE - JYZE FRONTEND
+# ================================
+# Sistema de Pedidos com Impressão via IP
+
+# Estágio 1: Build do Frontend
+FROM node:18-alpine AS frontend-builder
+
+# Configurar diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+
+# Instalar dependências
+RUN pnpm install --frozen-lockfile
+
+# Copiar código fonte
+COPY . .
+
+# Build da aplicação para produção
+RUN pnpm run build
+
+# Estágio 2: Servidor Nginx para produção
+FROM nginx:alpine AS frontend-production
+
+# Instalar curl para health checks
+RUN apk add --no-cache curl
+
+# Copiar configuração customizada do Nginx
+COPY <<EOF /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private must-revalidate proxy-revalidate max-age=0;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/xml+rss
+        application/json;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+    # Handle client routing (SPA)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # API proxy para backend - Redireciona para api.jyze.space
+    location /api/ {
+        proxy_pass https://api.jyze.space/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host api.jyze.space;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+EOF
+
+# Copiar arquivos built do estágio anterior
+COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+
+# Expor porta 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Comando para iniciar nginx
+CMD ["nginx", "-g", "daemon off;"]

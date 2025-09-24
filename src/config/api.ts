@@ -9,14 +9,25 @@
 const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
 const isElectron = typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer';
 
-// URLs BASE
+// URLs BASE - Configuração com domínios corretos
 export const API_CONFIG = {
-  // Backend principal - DINÂMICO baseado no ambiente
-  BACKEND_URL: isProduction && !isElectron ? 'https://api.jyze.space' : 'http://localhost:3002',
-  BACKEND_API: isProduction && !isElectron ? 'https://api.jyze.space' : 'http://localhost:3002',
+  // Backend principal - Sempre usa api.jyze.space em produção
+  BACKEND_URL: isProduction && !isElectron 
+    ? 'https://api.jyze.space' 
+    : 'http://localhost:3000',
+  BACKEND_API: isProduction && !isElectron 
+    ? 'https://api.jyze.space' 
+    : 'http://localhost:3000',
   
-  // Frontend 
-  FRONTEND_URL: isProduction ? 'https://jyze.space' : 'http://localhost:8081',
+  // Serviço de impressão - Via IP apenas (não usa domínio)
+  PRINT_SERVICE_URL: isProduction && !isElectron 
+    ? `${window.location.protocol}//${window.location.hostname}:3003` 
+    : 'http://192.168.3.5:3003',
+  
+  // Frontend - Sempre usa jyze.space em produção
+  FRONTEND_URL: isProduction 
+    ? 'https://jyze.space' 
+    : 'http://localhost:8081',
   
   // Timeouts padrão
   DEFAULT_TIMEOUT: 10000, // 10 segundos

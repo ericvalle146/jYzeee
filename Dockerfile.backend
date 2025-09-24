@@ -1,0 +1,59 @@
+# ================================
+# 🚀 DOCKERFILE - JYZE BACKEND
+# ================================
+# Backend NestJS com APIs e WebSockets
+
+FROM node:18-alpine AS backend-builder
+
+# Instalar dependências do sistema
+RUN apk add --no-cache python3 make g++
+
+# Configurar diretório de trabalho
+WORKDIR /app
+
+# Copiar package.json do backend
+COPY backend/package*.json ./
+
+# Instalar dependências
+RUN npm ci --only=production && npm cache clean --force
+
+# Copiar código fonte do backend
+COPY backend/ .
+
+# Build da aplicação
+RUN npm run build
+
+# Estágio de produção
+FROM node:18-alpine AS backend-production
+
+# Instalar dependências do sistema para produção
+RUN apk add --no-cache curl dumb-init
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Configurar diretório de trabalho
+WORKDIR /app
+
+# Copiar dependências de produção
+COPY --from=backend-builder /app/node_modules ./node_modules
+COPY --from=backend-builder /app/dist ./dist
+COPY --from=backend-builder /app/package*.json ./
+
+# Ajustar permissões
+RUN chown -R nestjs:nodejs /app
+USER nestjs
+
+# Expor porta
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Usar dumb-init para melhor gerenciamento de processos
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando para iniciar a aplicação
+CMD ["node", "dist/main.js"]

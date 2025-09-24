@@ -7,12 +7,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Order } from '../types/orders';
 import { useToast } from './use-toast';
+import { APP_CONFIG, getServiceUrl } from '../config/app.config';
 
-// Configuração do servidor de impressão via IP
+// Configuração do servidor de impressão usando configuração centralizada
 const PRINTER_SERVER = {
-  ip: '192.168.3.5',
-  port: 3003,
-  getURL: () => `http://192.168.3.5:3003`
+  getURL: () => getServiceUrl('printer'),
+  timeout: APP_CONFIG.services.printer.timeout,
+  retries: APP_CONFIG.services.printer.retries
 };
 
 export interface IPPrintResult {
@@ -51,7 +52,7 @@ export const useIPPrinter = () => {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // Aumentado para 5s
+      const timeoutId = setTimeout(() => controller.abort(), PRINTER_SERVER.timeout);
 
       const response = await fetch(`${PRINTER_SERVER.getURL()}/status`, {
         method: 'GET',
@@ -295,10 +296,10 @@ Servidor: ${PRINTER_SERVER.ip}:${PRINTER_SERVER.port}
     // Verificar status imediatamente
     checkServerStatus();
 
-    // Verificar a cada 30 segundos
+    // Verificar a cada intervalo configurado
     const interval = setInterval(() => {
       checkServerStatus();
-    }, 30000);
+    }, APP_CONFIG.services.printer.healthCheckInterval);
 
     return () => clearInterval(interval);
   }, [checkServerStatus]);
