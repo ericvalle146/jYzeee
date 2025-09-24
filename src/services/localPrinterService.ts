@@ -6,7 +6,13 @@
  */
 
 import { Order } from '../types/orders';
-import { PrintResult } from './unifiedPrinterService';
+
+export interface PrintResult {
+  success: boolean;
+  message: string;
+  printerId?: string;
+  error?: string;
+}
 
 // Configuração dinâmica baseada no ambiente
 const getPrinterConfig = () => {
