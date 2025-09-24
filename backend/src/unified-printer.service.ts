@@ -27,10 +27,10 @@ export interface PrintResult {
 @Injectable()
 export class UnifiedPrinterService {
   private readonly logger = new Logger(UnifiedPrinterService.name);
-  private readonly SSH_USER = 'eric';
-  private readonly LOCAL_PRINTER_IP = '192.168.3.5';
-  private readonly LOCAL_PRINTER_NAME = '5808L-V2024';
-  private readonly SSH_PASSWORD = 'eqrwiecr';
+  private readonly SSH_USER = process.env.SSH_USER || 'eric';
+  private readonly LOCAL_PRINTER_IP = process.env.SSH_HOST || '192.168.3.5';
+  private readonly LOCAL_PRINTER_NAME = process.env.PRINTER_NAME || '5808L-V2024';
+  private readonly SSH_PASSWORD = process.env.SSH_PASSWORD || 'eqrwiecr';
 
   /**
    * 🔍 DETECTAR IMPRESSORA SSH (SEMPRE UMA SÓ)
@@ -177,6 +177,40 @@ export class UnifiedPrinterService {
         success: false,
         message: connectionTest.message,
         error: 'SSH_CONNECTION_FAILED'
+      };
+    }
+  }
+
+  /**
+   * 🔗 TESTAR CONEXÃO SSH
+   */
+  async testSshConnection(): Promise<{success: boolean; message: string}> {
+    this.logger.log('🔗 Testing SSH connection...');
+    
+    try {
+      const { exec } = require('child_process');
+      const util = require('util');
+      const execAsync = util.promisify(exec);
+
+      const sshCommand = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'echo "SSH connection test successful"'`;
+      
+      const { stdout, stderr } = await execAsync(sshCommand);
+      
+      if (stdout.includes('SSH connection test successful')) {
+        this.logger.log('✅ SSH connection successful');
+        return {
+          success: true,
+          message: 'Conexão SSH ativa e funcionando'
+        };
+      } else {
+        throw new Error(stderr || 'Resposta SSH inválida');
+      }
+      
+    } catch (error) {
+      this.logger.error('❌ SSH Test Failed:', error.message);
+      return {
+        success: false,
+        message: `Falha na conexão SSH: ${error.message}`
       };
     }
   }
