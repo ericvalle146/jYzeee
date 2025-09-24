@@ -12,14 +12,14 @@ const isVPS = typeof window !== 'undefined' && window.location.hostname.includes
 
 // URLs BASE - Configuração com domínios corretos
 export const API_CONFIG = {
-  // Backend principal - Usar IP da VPS quando acessado via IP, domínio em produção
+  // Backend principal - Usar proxy quando na VPS, domínio em produção
   BACKEND_URL: isVPS 
-    ? 'http://31.97.162.165:3002' 
+    ? 'http://31.97.162.165:8080/api' 
     : isProduction && !isElectron 
       ? 'https://api.jyze.space' 
       : 'http://localhost:3002',
   BACKEND_API: isVPS 
-    ? 'http://31.97.162.165:3002' 
+    ? 'http://31.97.162.165:8080/api' 
     : isProduction && !isElectron 
       ? 'https://api.jyze.space' 
       : 'http://localhost:3002',
