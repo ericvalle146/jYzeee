@@ -2,7 +2,7 @@
 # 🚀 DOCKERFILE BACKEND - NESTJS
 # ========================================
 
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Instalar dependências do sistema necessárias para SSH
 RUN apk add --no-cache \
@@ -23,7 +23,7 @@ WORKDIR /app
 COPY backend/package*.json ./
 
 # Instalar todas as dependências (incluindo dev para o build)
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copiar código fonte do backend
 COPY backend/ ./
