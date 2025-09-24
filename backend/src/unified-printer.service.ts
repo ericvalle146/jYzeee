@@ -135,29 +135,6 @@ export class UnifiedPrinterService {
     }
   }
 
-  /**
-   * 🔗 TESTAR CONEXÃO SSH
-   */
-  async testSshConnection(): Promise<{ success: boolean; message: string }> {
-    const command = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'echo "SSH connection test successful"'`;
-    
-    this.logger.log('🔗 Testing SSH connection...');
-    
-    try {
-      const { stdout } = await execAsync(command);
-      this.logger.log(`✅ SSH Test Success: ${stdout}`);
-      return { 
-        success: true, 
-        message: 'Conexão SSH com impressora local estabelecida' 
-      };
-    } catch (error) {
-      this.logger.error(`❌ SSH Test Failed: ${error.message}`);
-      return { 
-        success: false, 
-        message: `Falha na conexão SSH: ${error.message}` 
-      };
-    }
-  }
 
   /**
    * ⚡ ATIVAR IMPRESSORA (SEMPRE ATIVA VIA SSH)
