@@ -8,16 +8,21 @@
 // Detectar ambiente dinamicamente
 const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
 const isElectron = typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer';
+const isVPS = typeof window !== 'undefined' && window.location.hostname.includes('31.97.162.165');
 
 // URLs BASE - Configuração com domínios corretos
 export const API_CONFIG = {
-  // Backend principal - Sempre usa api.jyze.space em produção
-  BACKEND_URL: isProduction && !isElectron 
-    ? 'https://api.jyze.space' 
-    : 'http://localhost:3002',
-  BACKEND_API: isProduction && !isElectron 
-    ? 'https://api.jyze.space' 
-    : 'http://localhost:3002',
+  // Backend principal - Usar IP da VPS quando acessado via IP, domínio em produção
+  BACKEND_URL: isVPS 
+    ? 'http://31.97.162.165:3002' 
+    : isProduction && !isElectron 
+      ? 'https://api.jyze.space' 
+      : 'http://localhost:3002',
+  BACKEND_API: isVPS 
+    ? 'http://31.97.162.165:3002' 
+    : isProduction && !isElectron 
+      ? 'https://api.jyze.space' 
+      : 'http://localhost:3002',
   
   // ⚠️ IMPRESSÃO VIA SSH - Não usa mais URL específica (removido)
   
@@ -41,7 +46,7 @@ export const checkApiHealth = async (): Promise<boolean> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch(`${API_CONFIG.BACKEND_API}/printer/status`, {
+    const response = await fetch(`${API_CONFIG.BACKEND_API}/api/health`, {
       method: 'GET',
       signal: controller.signal,
     });
