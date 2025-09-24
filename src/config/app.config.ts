@@ -40,19 +40,20 @@ export const APP_CONFIG = {
   // URLs de serviços
   services: {
     // Backend principal (NestJS) - Sempre usa api.jyze.space em produção
-    backend: {
-      url: env.isProduction && !env.isElectron 
-        ? 'https://api.jyze.space'
-        : 'http://localhost:3000',
+        backend: {
+          url: env.isProduction && !env.isElectron 
+            ? 'https://api.jyze.space'
+            : 'http://localhost:3002',
       timeout: 10000,
       retries: 3
     },
 
-    // Serviço de impressão via IP - Comunica diretamente via IP (não usa domínio)
+    // Serviço de impressão via SSH - Conecta ao computador local via SSH
     printer: {
-      url: env.isProduction && !env.isElectron 
-        ? `${env.protocol}//${env.hostname}:3003`
-        : 'http://192.168.3.5:3003',
+      type: 'ssh',
+      host: '192.168.3.5',
+      user: 'eric',
+      printerName: '5808L-V2024',
       timeout: 5000,
       retries: 2,
       healthCheckInterval: 30000

@@ -1,47 +1,11 @@
-# ================================
-# 🐳 DOCKER COMPOSE - JYZE SYSTEM
-# ================================
-# Sistema completo de pedidos com impressão via IP
+# ========================================
+# 🚀 DOCKER COMPOSE - JYZE DELIVERY VPS
+# ========================================
 
 version: '3.8'
 
 services:
-  # ========================
-  # 🔥 BACKEND API (NestJS)
-  # ========================
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: jyze-backend
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_URL=${DATABASE_URL}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
-    ports:
-      - "3000:3000"
-    volumes:
-      - backend_data:/app/data
-      - ./logs:/app/logs
-    networks:
-      - jyze-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ========================
-  # 🌐 FRONTEND (React/Vite)
-  # ========================
+  # 🌐 FRONTEND (jyze.space)
   frontend:
     build:
       context: .
@@ -51,67 +15,163 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./logs/nginx:/var/log/nginx
+    environment:
+      - NODE_ENV=production
+      
+      # URLs da aplicação
+      - VITE_API_URL=https://api.jyze.space
+      - VITE_FRONTEND_URL=https://jyze.space
+      
+      # Supabase Frontend
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      
+      # N8N Webhooks
+      - VITE_WEBHOOK_URL=${VITE_WEBHOOK_URL}
+      - VITE_WEBHOOK_CRUD_PRODUTOS=${VITE_WEBHOOK_CRUD_PRODUTOS}
+      - VITE_WEBHOOK_LINK_URL=${VITE_WEBHOOK_LINK_URL}
+      
+      # Evolution API (WhatsApp)
+      - VITE_EVOLUTION_API_URL=${VITE_EVOLUTION_API_URL}
+      - VITE_EVOLUTION_API_KEY=${VITE_EVOLUTION_API_KEY}
+      - VITE_WHATSAPP_INSTANCE_NAME=${VITE_WHATSAPP_INSTANCE_NAME}
     networks:
       - jyze-network
+    volumes:
+      - frontend_logs:/var/log/nginx
+      - ./ssl:/etc/nginx/ssl:ro  # Se você tiver certificados SSL
     depends_on:
       - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`jyze.space`,`www.jyze.space`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
 
-  # ========================
-  # 🖨️ PRINT SERVICE (Local)
-  # ========================
-  print-service:
+  # 🔧 BACKEND (api.jyze.space)
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile.print-service
-    container_name: jyze-print-service
+      dockerfile: Dockerfile.backend
+    container_name: jyze-backend
     restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - LOCAL_IP=${LOCAL_IP:-192.168.3.5}
-      - LOCAL_PORT=${LOCAL_PORT:-3003}
-      - PRINTER_NAME=${PRINTER_NAME:-5808L-V2024}
-      - VPS_BACKEND_URL=${VPS_BACKEND_URL:-https://api.jyze.space}
-      - VPS_ALLOWED_IPS=${VPS_ALLOWED_IPS:-31.97.162.165}
-      - REQUIRE_IP_AUTH=${REQUIRE_IP_AUTH:-true}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-your_webhook_secret_here}
     ports:
-      - "3003:3003"
-    volumes:
-      - print_queue:/tmp/jyze-print-queue
-      - ./local-printer-service/authorized-ips.json:/app/authorized-ips.json
-      - /dev:/dev:ro
-      - /etc/cups:/etc/cups:ro
-    privileged: true
+      - "3002:3002"
+    environment:
+      # Configurações gerais
+      - NODE_ENV=production
+      - PORT=3002
+      
+      # Banco de dados
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      
+      # SSH para impressão
+      - SSH_USER=${SSH_USER:-eric}
+      - SSH_HOST=${SSH_HOST:-192.168.3.5}
+      - SSH_PASSWORD=${SSH_PASSWORD}
+      - PRINTER_NAME=${PRINTER_NAME:-5808L-V2024}
+      
+      # URLs
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://jyze.space}
+      - FRONTEND_URL=${FRONTEND_URL:-https://jyze.space}
+      - BACKEND_URL=${BACKEND_URL:-https://api.jyze.space}
+      
+      # Logs
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ENABLE_LOGS=${ENABLE_LOGS:-true}
     networks:
       - jyze-network
-    depends_on:
-      - backend
+    volumes:
+      - backend_data:/app/uploads
+      - backend_logs:/app/logs
+      - print_queue:/tmp/jyze-print-queue
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.jyze.space`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=3002"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/printer/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
+  # 🔄 REVERSE PROXY (Traefik) - Opcional
+  traefik:
+    image: traefik:v2.10
+    container_name: jyze-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Dashboard
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=admin@jyze.space
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - jyze-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.jyze.space`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+    profiles:
+      - traefik  # Use 'docker-compose --profile traefik up' para incluir
 
-# ========================
-# 📦 VOLUMES
-# ========================
+# 📁 VOLUMES PERSISTENTES
 volumes:
+  frontend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/log/jyze/frontend
+  
   backend_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/jyze/backend
+  
+  backend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/log/jyze/backend
+  
   print_queue:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/jyze/print-queue
+  
+  traefik_letsencrypt:
+    driver: local
 
-# ========================
-# 🌐 NETWORKS
-# ========================
+# 🌐 REDE INTERNA
 networks:
   jyze-network:
     driver: bridge
     ipam:
+      driver: default
       config:
         - subnet: 172.20.0.0/16

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Order, OrderStats, isOrderComplete } from '../types/orders';
 import { supabase } from '@/config/supabase';
+import { API_CONFIG } from '../config/api';
 
 interface UseOrdersReturn {
   orders: Order[];
@@ -12,8 +13,8 @@ interface UseOrdersReturn {
   updatePrintStatus: (orderId: number, impresso: boolean) => Promise<Order>;
 }
 
-// Configurar API URL - SEMPRE api.jyze.space (exceto impressão)
-const API_URL = 'https://api.jyze.space';
+// Usar configuração dinâmica
+const API_URL = API_CONFIG.BACKEND_API;
 
 export const useOrders = (): UseOrdersReturn => {
   const [orders, setOrders] = useState<Order[]>([]);

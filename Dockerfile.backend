@@ -1,59 +1,104 @@
-# ================================
-# 🚀 DOCKERFILE - JYZE BACKEND
-# ================================
-# Backend NestJS com APIs e WebSockets
+# ========================================
+# 🚀 DOCKERFILE BACKEND - NESTJS
+# ========================================
 
-FROM node:18-alpine AS backend-builder
+FROM node:18-alpine
 
-# Instalar dependências do sistema
-RUN apk add --no-cache python3 make g++
+# Instalar dependências do sistema necessárias para SSH
+RUN apk add --no-cache \
+    openssh-client \
+    sshpass \
+    curl \
+    bash \
+    && rm -rf /var/cache/apk/*
 
-# Configurar diretório de trabalho
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001 -G nodejs
+
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Copiar package.json do backend
+# Copiar package files
 COPY backend/package*.json ./
 
 # Instalar dependências
 RUN npm ci --only=production && npm cache clean --force
 
 # Copiar código fonte do backend
-COPY backend/ .
+COPY backend/ ./
 
 # Build da aplicação
 RUN npm run build
 
-# Estágio de produção
-FROM node:18-alpine AS backend-production
+# Criar diretórios necessários
+RUN mkdir -p /app/logs /app/uploads /tmp/jyze-print-queue
 
-# Instalar dependências do sistema para produção
-RUN apk add --no-cache curl dumb-init
+# Configurar SSH para impressão
+RUN mkdir -p /home/nestjs/.ssh && \
+    chmod 700 /home/nestjs/.ssh && \
+    chown -R nestjs:nodejs /home/nestjs/.ssh
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+# Configurar SSH para não verificar host keys (necessário para automação)
+RUN echo "Host *" >> /etc/ssh/ssh_config && \
+    echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config && \
+    echo "    UserKnownHostsFile=/dev/null" >> /etc/ssh/ssh_config
 
-# Configurar diretório de trabalho
-WORKDIR /app
+# Criar script de entrada
+COPY <<EOF /docker-entrypoint.sh
+#!/bin/bash
 
-# Copiar dependências de produção
-COPY --from=backend-builder /app/node_modules ./node_modules
-COPY --from=backend-builder /app/dist ./dist
-COPY --from=backend-builder /app/package*.json ./
+echo "🚀 Iniciando Backend JYZE..."
+echo "🔗 API: https://api.jyze.space"
+echo "🔐 SSH Host: \${SSH_HOST:-192.168.3.5}"
+echo "🖨️ Printer: \${PRINTER_NAME:-5808L-V2024}"
+echo "📦 Build: \$(date)"
+
+# Verificar variáveis de ambiente essenciais
+if [ -z "\$SUPABASE_URL" ]; then
+    echo "❌ ERRO: SUPABASE_URL não configurada!"
+    exit 1
+fi
+
+if [ -z "\$SUPABASE_KEY" ]; then
+    echo "❌ ERRO: SUPABASE_KEY não configurada!"
+    exit 1
+fi
+
+# Testar conexão SSH para impressão (se configurada)
+if [ -n "\$SSH_HOST" ] && [ -n "\$SSH_USER" ] && [ -n "\$SSH_PASSWORD" ]; then
+    echo "🔐 Testando conexão SSH para impressão..."
+    if timeout 5 sshpass -p "\$SSH_PASSWORD" ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "\$SSH_USER@\$SSH_HOST" 'echo "SSH OK"' >/dev/null 2>&1; then
+        echo "✅ Conexão SSH funcionando!"
+    else
+        echo "⚠️ Conexão SSH falhando - impressão pode não funcionar"
+    fi
+fi
+
+# Iniciar aplicação
+echo "🎯 Iniciando servidor NestJS na porta \${PORT:-3002}..."
+exec node dist/main.js
+EOF
+
+RUN chmod +x /docker-entrypoint.sh
 
 # Ajustar permissões
-RUN chown -R nestjs:nodejs /app
+RUN chown -R nestjs:nodejs /app /tmp/jyze-print-queue
+
+# Mudar para usuário não-root
 USER nestjs
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 3002
+
+# Labels para metadados
+LABEL maintainer="JYZE Team"
+LABEL version="1.0.0"
+LABEL description="Backend NestJS para JYZE Delivery com suporte SSH"
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3002/printer/status || exit 1
 
-# Usar dumb-init para melhor gerenciamento de processos
-ENTRYPOINT ["dumb-init", "--"]
-
-# Comando para iniciar a aplicação
-CMD ["node", "dist/main.js"]
+# Entrada
+ENTRYPOINT ["/docker-entrypoint.sh"]

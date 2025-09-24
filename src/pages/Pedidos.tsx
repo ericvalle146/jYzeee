@@ -42,7 +42,7 @@ import { useToast } from '../hooks/use-toast';
 // useGlobalAutoPrint removido - não precisamos mais dos controles locais
 import { Order } from '../types/orders';
 import { PrinterSetup } from '../components/PrinterSetup';
-import { useIPPrinter } from '../hooks/useIPPrinter';
+import { useSSHPrinter } from '../hooks/useSSHPrinter';
 import { USBPrinterManager } from '../components/USBPrinterManager';
 import { useOrders } from '../hooks/useOrders';
 import { CustomLayoutService } from '../services/customLayoutService';
@@ -73,7 +73,7 @@ const Pedidos = () => {
   const { toast } = useToast();
   
   // Usar dados reais do Supabase
-  const { orders, loading, error, stats, refreshData, updateOrder, updatePrintStatus } = useOrders();
+  const { orders, loading, error: ordersError, stats, refreshData, updateOrder, updatePrintStatus } = useOrders();
   
   // Estados para layout
   const [layoutBlocks, setLayoutBlocks] = useState<OrderedBlock[]>([]);
@@ -96,21 +96,24 @@ const Pedidos = () => {
     tipo_pagamento: ''
   });
   
-  // 🌐 NOVO SISTEMA: Hook para impressão VIA IP
+  // 🔐 NOVO SISTEMA: Hook para impressão VIA SSH
   const { 
-    printing,
-    printingOrderId,
-    serverStatus,
-    checkServerStatus,
-    testPrint,
-    printOrder: printOrderViaIP,
     isAvailable,
-    serverURL,
-    serverIP
-  } = useIPPrinter();
+    isConnected,
+    lastCheck,
+    error,
+    printerInfo,
+    checkStatus,
+    printOrderViaSSH,
+    testPrint,
+    serverInfo
+  } = useSSHPrinter();
   
   // Estados para controle de auto-impressão
   const [lastOrderCount, setLastOrderCount] = useState<number>(0);
+  
+  // Estado para rastrear impressão em andamento
+  const [printingOrderId, setPrintingOrderId] = useState<number | null>(null);
   
   // Estados para sistema de impressão dinâmica
   const [showLayoutSelector, setShowLayoutSelector] = useState<Record<number, boolean>>({});
@@ -134,11 +137,11 @@ const Pedidos = () => {
 
   // Função removida - não precisamos mais de teste automático
 
-  // 🌐 SISTEMA VIA IP: Verificar status na inicialização
+  // 🔐 SISTEMA VIA SSH: Verificar status na inicialização
   useEffect(() => {
-    // Verificar status do servidor de impressão via IP
-    checkServerStatus();
-  }, [checkServerStatus]);
+    // Verificar status da conexão SSH
+    checkStatus();
+  }, [checkStatus]);
 
   // useEffect removido - não precisamos mais de teste automático repetitivo
 
@@ -319,12 +322,12 @@ const Pedidos = () => {
     });
   };
 
-  // 🌐 Função para testar servidor via IP
-  const handleTestIPPrinter = async () => {
+  // 🔐 Função para testar impressora via SSH
+  const handleTestSSHPrinter = async () => {
     try {
       await testPrint();
     } catch (error) {
-      console.error('Erro ao testar impressão via IP:', error);
+      console.error('Erro ao testar impressão SSH:', error);
     }
   };
 
@@ -381,31 +384,35 @@ PAGAMENTO: {tipo_pagamento}`;
     return formatted;
   }, []);
 
-  // 🌐 NOVA FUNÇÃO: Impressão EXCLUSIVAMENTE via IP
+  // 🔐 NOVA FUNÇÃO: Impressão EXCLUSIVAMENTE via SSH
   const handlePrintOrder = useCallback(async (order: Order): Promise<boolean> => {
     try {
-      console.log(`🌐 Iniciando impressão via IP para pedido #${order.id}`);
+      console.log(`🔐 Iniciando impressão via SSH para pedido #${order.id}`);
       
-      // Verificar se servidor está disponível
-      if (!isAvailable) {
+      // Marcar como imprimindo
+      setPrintingOrderId(order.id);
+      
+      // Verificar se SSH está disponível
+      if (!isAvailable || !isConnected) {
         toast({
-          title: "🌐 Servidor indisponível",
-          description: `Servidor de impressão (${serverIP}) não está respondendo. Verifique se o serviço está rodando.`,
+          title: "🔐 SSH indisponível",
+          description: `Conexão SSH com a impressora não está estabelecida. ${error || 'Verifique a conectividade.'}`,
           variant: "destructive",
           duration: 8000,
         });
+        setPrintingOrderId(null);
         return false;
       }
 
-      // Imprimir via IP
-      const result = await printOrderViaIP(order);
+      // Imprimir via SSH
+      const result = await printOrderViaSSH(order);
       
       if (result.success) {
         // ✅ Marcar automaticamente como impresso no banco
         try {
           await updatePrintStatus(order.id, true);
           toast({
-            title: "✅ Impresso via IP!",
+            title: "✅ Impresso via SSH!",
             description: `Pedido #${order.id} foi impresso e marcado como concluído`,
           });
           return true;
@@ -413,7 +420,7 @@ PAGAMENTO: {tipo_pagamento}`;
           console.error('Erro ao atualizar status:', statusError);
           // Não bloquear - impressão funcionou
           toast({
-            title: "🖨️ Impressão realizada via IP",
+            title: "🔐 Impressão realizada via SSH",
             description: "Pedido foi impresso! (Status será atualizado em breve)",
             variant: "default",
           });
@@ -433,35 +440,29 @@ PAGAMENTO: {tipo_pagamento}`;
           return true;
         }
       } else {
-        // Verificar se precisa de autorização IP
-        if (result.needsAuth) {
-          toast({
-            title: "🔐 Autorização necessária",
-            description: `Acesse ${result.authUrl} para autorizar impressão via IP`,
-            variant: "destructive",
-            duration: 10000,
-          });
-        } else {
-          toast({
-            title: "❌ Falha na impressão via IP",
-            description: result.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "❌ Falha na impressão SSH",
+          description: result.message,
+          variant: "destructive",
+        });
         return false;
       }
       
     } catch (error) {
-      console.error('Erro na impressão via IP:', error);
+      console.error('Erro na impressão SSH:', error);
       
       toast({
-        title: "❌ Erro na impressão via IP",
-        description: error.message || "Falha ao conectar com servidor de impressão",
+        title: "❌ Erro na impressão SSH",
+        description: error.message || "Falha na conexão SSH com a impressora",
         variant: "destructive",
       });
+      setPrintingOrderId(null);
       return false;
+    } finally {
+      // Sempre limpar o estado de impressão
+      setPrintingOrderId(null);
     }
-  }, [printOrderViaIP, updatePrintStatus, toast, isAvailable, serverIP]);
+  }, [printOrderViaSSH, updatePrintStatus, toast, isAvailable, isConnected, error]);
 
   // Funções para controlar o seletor de layout
   const toggleLayoutSelector = useCallback((orderId: number) => {
@@ -1043,11 +1044,11 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
     );
   }
 
-  if (error) {
+  if (ordersError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-red-500 mb-4">Erro ao carregar pedidos: {error}</p>
+          <p className="text-red-500 mb-4">Erro ao carregar pedidos: {ordersError}</p>
           <Button onClick={refreshData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Tentar novamente
@@ -1091,7 +1092,7 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
         </div>
       </div>
 
-      {/* 🌐 Seção de Status do Servidor de Impressão via IP */}
+      {/* 🔐 Seção de Status da Impressora SSH */}
       <div className="px-6 py-4 border-b border-border/30">
         <Card className="bg-gradient-to-r from-background to-background/80 border-0 shadow-xl">
           <CardContent className="p-6">
@@ -1100,47 +1101,45 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                 <div className="flex items-center gap-3">
                   <Printer className="h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="text-lg font-semibold">Servidor de Impressão via IP</h3>
+                    <h3 className="text-lg font-semibold">Impressora SSH</h3>
                     <p className="text-sm text-muted-foreground">
-                      {serverURL} {serverStatus?.printerName && `• ${serverStatus.printerName}`}
+                      {printerInfo.name} • {printerInfo.connection}
                     </p>
                   </div>
                 </div>
                 
-                {/* Badge de Status do Servidor */}
+                {/* Badge de Status SSH */}
                 <Badge 
                   className={`px-4 py-2 text-sm font-medium ${
-                    isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    isAvailable && isConnected ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                   }`}
                 >
-                  {isAvailable ? (
-                    <><CheckCircle className="h-4 w-4 mr-1" /> Online</>
+                  {isAvailable && isConnected ? (
+                    <><CheckCircle className="h-4 w-4 mr-1" /> Conectado</>
                   ) : (
-                    <><AlertCircle className="h-4 w-4 mr-1" /> Offline</>
+                    <><AlertCircle className="h-4 w-4 mr-1" /> Desconectado</>
                   )}
                 </Badge>
 
-                {/* Informações do Servidor */}
-                {serverStatus && (
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>IPs Autorizados: {serverStatus.authorizedIPs}</span>
-                    {serverStatus.pendingIPs > 0 && (
-                      <span className="text-yellow-600">Pendentes: {serverStatus.pendingIPs}</span>
-                    )}
-                    {serverStatus.platform && (
-                      <span>Plataforma: {serverStatus.platform}</span>
-                    )}
-                    <span className={`text-xs px-2 py-1 rounded ${isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {isAvailable ? 'CONECTADO' : 'DESCONECTADO'}
-                    </span>
-                  </div>
-                )}
+                {/* Informações SSH */}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>Status: {printerInfo.status === 'online' ? 'Online' : 'Offline'}</span>
+                  {lastCheck && (
+                    <span>Última verificação: {lastCheck.toLocaleTimeString('pt-BR')}</span>
+                  )}
+                  {error && (
+                    <span className="text-red-600">Erro: {error}</span>
+                  )}
+                  <span className={`text-xs px-2 py-1 rounded ${isAvailable && isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {isAvailable && isConnected ? 'SSH ATIVO' : 'SSH INATIVO'}
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
                 {/* Botões de Ação */}
                 <Button 
-                  onClick={() => checkServerStatus(true)} 
+                  onClick={() => checkStatus()} 
                   variant="outline"
                   size="sm"
                   title="Forçar verificação do servidor de impressão"
@@ -1150,8 +1149,8 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                 </Button>
                 
                 <Button 
-                  onClick={handleTestIPPrinter} 
-                  disabled={!isAvailable}
+                  onClick={handleTestSSHPrinter} 
+                  disabled={!isAvailable || !isConnected}
                   variant="outline"
                   size="sm"
                 >
@@ -1159,17 +1158,10 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                   Testar
                 </Button>
 
-                {/* Botão para acessar painel de autorização */}
-                {serverURL && (
-                  <Button 
-                    onClick={() => window.open(serverURL, '_blank')}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Painel
-                  </Button>
-                )}
+                {/* Info do Backend SSH */}
+                <div className="text-xs text-muted-foreground">
+                  {serverInfo}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1381,15 +1373,15 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className={`h-8 px-2 ${!isAvailable ? 'opacity-50' : ''}`}
+                        className={`h-8 px-2 ${!isAvailable || !isConnected ? 'opacity-50' : ''}`}
                         onClick={() => handlePrintOrder(order)}
-                        disabled={printingOrderId === order.id || !isAvailable}
-                        title={!isAvailable ? 'Servidor de impressão offline' : 'Imprimir via IP'}
+                        disabled={printingOrderId === order.id || !isAvailable || !isConnected}
+                        title={!isAvailable || !isConnected ? 'SSH desconectado' : 'Imprimir via SSH'}
                       >
                         {printingOrderId === order.id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Printer className={`h-3 w-3 ${!isAvailable ? 'text-red-500' : ''}`} />
+                          <Printer className={`h-3 w-3 ${!isAvailable || !isConnected ? 'text-red-500' : ''}`} />
                         )}
                       </Button>
                     </div>
@@ -1514,15 +1506,15 @@ PAGAMENTO: ${order.tipo_pagamento || 'Nao informado'}`;
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className={`flex-1 h-8 text-xs ${!isAvailable ? 'opacity-50' : ''}`}
+                        className={`flex-1 h-8 text-xs ${!isAvailable || !isConnected ? 'opacity-50' : ''}`}
                         onClick={() => handlePrintOrder(order)}
-                        disabled={printingOrderId === order.id || !isAvailable}
-                        title={!isAvailable ? 'Servidor de impressão offline' : 'Reimprimir via IP'}
+                        disabled={printingOrderId === order.id || !isAvailable || !isConnected}
+                        title={!isAvailable || !isConnected ? 'SSH desconectado' : 'Reimprimir via SSH'}
                       >
                         {printingOrderId === order.id ? (
                           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                         ) : (
-                          <Printer className={`h-3 w-3 mr-1 ${!isAvailable ? 'text-red-500' : ''}`} />
+                          <Printer className={`h-3 w-3 mr-1 ${!isAvailable || !isConnected ? 'text-red-500' : ''}`} />
                         )}
                         Reimprimir
                       </Button>

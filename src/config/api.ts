@@ -14,15 +14,12 @@ export const API_CONFIG = {
   // Backend principal - Sempre usa api.jyze.space em produção
   BACKEND_URL: isProduction && !isElectron 
     ? 'https://api.jyze.space' 
-    : 'http://localhost:3000',
+    : 'http://localhost:3002',
   BACKEND_API: isProduction && !isElectron 
     ? 'https://api.jyze.space' 
-    : 'http://localhost:3000',
+    : 'http://localhost:3002',
   
-  // Serviço de impressão - Via IP apenas (não usa domínio)
-  PRINT_SERVICE_URL: isProduction && !isElectron 
-    ? `${window.location.protocol}//${window.location.hostname}:3003` 
-    : 'http://192.168.3.5:3003',
+  // ⚠️ IMPRESSÃO VIA SSH - Não usa mais URL específica (removido)
   
   // Frontend - Sempre usa jyze.space em produção
   FRONTEND_URL: isProduction 

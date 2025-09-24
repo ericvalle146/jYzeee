@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 
 const execAsync = promisify(exec);
 
@@ -12,7 +9,7 @@ export interface SystemPrinter {
   name: string;
   status: 'online' | 'offline' | 'inactive' | 'error';
   isDefault: boolean;
-  type: 'system' | 'usb' | 'thermal';
+  type: 'ssh';
   devicePath?: string;
   description?: string;
   connection?: string;
@@ -30,483 +27,177 @@ export interface PrintResult {
 @Injectable()
 export class UnifiedPrinterService {
   private readonly logger = new Logger(UnifiedPrinterService.name);
+  private readonly SSH_USER = 'eric';
+  private readonly LOCAL_PRINTER_IP = '192.168.3.5';
+  private readonly LOCAL_PRINTER_NAME = '5808L-V2024';
+  private readonly SSH_PASSWORD = 'eqrwiecr';
 
   /**
-   * 🔍 DETECTAR TODAS AS IMPRESSORAS DO SISTEMA
-   * Busca impressoras em múltiplas fontes e retorna lista completa
+   * 🔍 DETECTAR IMPRESSORA SSH (SEMPRE UMA SÓ)
    */
   async detectAllPrinters(): Promise<SystemPrinter[]> {
-    this.logger.log('🔍 INICIANDO DETECÇÃO COMPLETA DE IMPRESSORAS');
-    const allPrinters: SystemPrinter[] = [];
-
+    this.logger.log('🔍 VERIFICANDO IMPRESSORA SSH');
+    
     try {
-      // 1. Impressoras configuradas no CUPS (Linux/macOS)
-      const systemPrinters = await this.detectSystemPrinters();
-      allPrinters.push(...systemPrinters);
-
-      // 2. Dispositivos USB diretos
-      const usbPrinters = await this.detectUSBPrinters();
-      allPrinters.push(...usbPrinters);
-
-      // 3. Remover duplicatas
-      const uniquePrinters = this.removeDuplicates(allPrinters);
-
-      this.logger.log(`✅ TOTAL: ${uniquePrinters.length} impressoras detectadas`);
-      return uniquePrinters;
+      const connectionTest = await this.testSshConnection();
+      
+      return [{
+        id: 'ssh_printer',
+        name: this.LOCAL_PRINTER_NAME,
+        status: connectionTest.success ? 'online' : 'error',
+        isDefault: true,
+        type: 'ssh',
+        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP}`,
+        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}`,
+        canActivate: false
+      }];
 
     } catch (error) {
-      this.logger.error('❌ Erro na detecção:', error);
-      return [];
+      this.logger.error('❌ Erro na detecção SSH:', error);
+      return [{
+        id: 'ssh_printer',
+        name: this.LOCAL_PRINTER_NAME,
+        status: 'error',
+        isDefault: true,
+        type: 'ssh',
+        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP} (ERRO)`,
+        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}`,
+        canActivate: false
+      }];
     }
   }
 
   /**
-   * 🖨️ DETECTAR IMPRESSORAS DO SISTEMA (CUPS)
-   */
-  private async detectSystemPrinters(): Promise<SystemPrinter[]> {
-    const printers: SystemPrinter[] = [];
-
-    try {
-      // Obter lista de impressoras
-      const { stdout: printerList } = await execAsync('lpstat -p');
-      const { stdout: defaultPrinter } = await execAsync('lpstat -d').catch(() => ({ stdout: '' }));
-
-      const defaultName = defaultPrinter.match(/destino padrão do sistema: (.+)/)?.[1]?.trim();
-
-      // Processar cada linha da lista
-      const lines = printerList.split('\n').filter(line => line.trim());
-      
-      for (const line of lines) {
-        const match = line.match(/impressora (.+?) está (.+?);/);
-        if (match) {
-          const [, name, statusText] = match;
-          const isInactive = statusText.includes('inativa');
-          
-          // Obter detalhes da impressora
-          const details = await this.getPrinterDetails(name);
-          
-          printers.push({
-            id: `system_${name}`,
-            name: name,
-            status: isInactive ? 'inactive' : 'online',
-            isDefault: name === defaultName,
-            type: 'system',
-            description: details.description,
-            connection: details.connection,
-            canActivate: isInactive
-          });
-        }
-      }
-
-      this.logger.log(`📋 Sistema: ${printers.length} impressoras encontradas`);
-      return printers;
-
-    } catch (error) {
-      this.logger.warn('⚠️ Erro ao detectar impressoras do sistema:', error.message);
-      return [];
-    }
-  }
-
-  /**
-   * 🔌 DETECTAR DISPOSITIVOS USB
-   */
-  private async detectUSBPrinters(): Promise<SystemPrinter[]> {
-    const printers: SystemPrinter[] = [];
-
-    try {
-      // Verificar dispositivos /dev/usb/lp*
-      const usbDevices = await this.findUSBDevices();
-      
-      for (const device of usbDevices) {
-        const canWrite = await this.testDeviceAccess(device);
-        
-        printers.push({
-          id: `usb_${device.replace('/dev/', '').replace('/', '_')}`,
-          name: `Impressora USB (${device})`,
-          status: canWrite ? 'online' : 'error',
-          isDefault: false,
-          type: 'usb',
-          devicePath: device,
-          description: `Dispositivo USB direto: ${device}`,
-          connection: 'USB Direct'
-        });
-      }
-
-      this.logger.log(`🔌 USB: ${printers.length} dispositivos encontrados`);
-      return printers;
-
-    } catch (error) {
-      this.logger.warn('⚠️ Erro ao detectar USB:', error.message);
-      return [];
-    }
-  }
-
-  /**
-   * 📝 OBTER DETALHES DE UMA IMPRESSORA
-   */
-  private async getPrinterDetails(printerName: string): Promise<{description: string, connection: string}> {
-    try {
-      const { stdout } = await execAsync(`lpstat -l -p "${printerName}"`);
-      
-      const descMatch = stdout.match(/Descrição: (.+)/);
-      const connMatch = stdout.match(/Conexão: (.+)/);
-      
-      return {
-        description: descMatch?.[1]?.trim() || printerName,
-        connection: connMatch?.[1]?.trim() || 'Desconhecida'
-      };
-    } catch (error) {
-      return {
-        description: printerName,
-        connection: 'Desconhecida'
-      };
-    }
-  }
-
-  /**
-   * 🔍 ENCONTRAR DISPOSITIVOS USB
-   */
-  private async findUSBDevices(): Promise<string[]> {
-    const devices: string[] = [];
-
-    try {
-      // Verificar /dev/usb/lp*
-      if (fs.existsSync('/dev/usb')) {
-        const files = fs.readdirSync('/dev/usb');
-        for (const file of files) {
-          if (file.startsWith('lp')) {
-            devices.push(`/dev/usb/${file}`);
-          }
-        }
-      }
-
-      // Verificar /dev/usblp*
-      const usbLpFiles = await execAsync('ls /dev/usblp* 2>/dev/null || true');
-      if (usbLpFiles.stdout.trim()) {
-        devices.push(...usbLpFiles.stdout.trim().split('\n'));
-      }
-
-    } catch (error) {
-      // Silencioso - normal não ter dispositivos USB
-    }
-
-    return devices;
-  }
-
-  /**
-   * 🧪 TESTAR ACESSO A DISPOSITIVO (SEM ESCREVER)
-   */
-  private async testDeviceAccess(devicePath: string): Promise<boolean> {
-    try {
-      // APENAS verificar se o dispositivo existe e é acessível para escrita
-      // SEM escrever nada na impressora para evitar impressão automática
-      await execAsync(`test -w ${devicePath}`);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * 🗑️ REMOVER DUPLICATAS
-   */
-  private removeDuplicates(printers: SystemPrinter[]): SystemPrinter[] {
-    const seen = new Set<string>();
-    return printers.filter(printer => {
-      const key = `${printer.name}_${printer.type}`;
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-  }
-
-  /**
-   * ⚡ ATIVAR IMPRESSORA INATIVA
-   */
-  async activatePrinter(printerId: string): Promise<PrintResult> {
-    try {
-      // Extrair nome da impressora do ID
-      const printerName = printerId.replace('system_', '');
-      
-      this.logger.log(`⚡ Tentando ativar impressora: ${printerName}`);
-      
-      // Comando para ativar impressora
-      await execAsync(`cupsenable "${printerName}"`);
-      
-      // Verificar se foi ativada - aguardar um pouco para o sistema processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const { stdout } = await execAsync(`lpstat -p "${printerName}"`);
-      const isActive = !stdout.includes('inativa');
-      const isEnabled = stdout.includes('habilitada');
-      
-      this.logger.log(`📊 Status da impressora ${printerName}: ${stdout.trim()}`);
-      
-      if (isActive) {
-        this.logger.log(`✅ Impressora ${printerName} ativada com sucesso`);
-        return {
-          success: true,
-          message: `Impressora ${printerName} foi ativada e está pronta para uso`,
-          printerId
-        };
-      } else if (isEnabled) {
-        // Impressora está habilitada mas inativa - problema de configuração
-        this.logger.warn(`⚠️ Impressora ${printerName} está habilitada mas inativa - possível problema de configuração`);
-        return {
-          success: false,
-          message: `Impressora ${printerName} está habilitada mas inativa. Verifique a configuração da impressora no sistema.`,
-          error: 'PRINTER_CONFIGURATION_ISSUE'
-        };
-      } else {
-        return {
-          success: false,
-          message: `Falha ao ativar impressora ${printerName}. Comando cupsenable não teve efeito.`,
-          error: 'ACTIVATION_COMMAND_FAILED'
-        };
-      }
-
-    } catch (error) {
-      this.logger.error(`❌ Erro ao ativar impressora:`, error);
-      return {
-        success: false,
-        message: 'Erro ao ativar impressora',
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * 🖨️ IMPRIMIR PEDIDO
+   * 🖨️ IMPRIMIR PEDIDO VIA SSH
    */
   async printOrder(printerId: string, orderData: any, printText: string, clientIP?: string): Promise<PrintResult> {
     try {
-      this.logger.log(`🖨️ Imprimindo pedido ${orderData.id} na impressora ${printerId}`);
+      this.logger.log(`🖨️ Imprimindo pedido ${orderData.id} via SSH`);
 
-      // Verificar se impressora está disponível
-      const printers = await this.detectAllPrinters();
-      const printer = printers.find(p => p.id === printerId);
-
-      if (!printer) {
+      // Sempre usar SSH - ignorar printerId
+      const result = await this.printViaSsh(printText);
+      
+      if (result.success) {
+        this.logger.log(`✅ Pedido ${orderData.id} impresso com sucesso via SSH`);
+        return {
+          success: true,
+          message: `Pedido #${orderData.id} impresso via SSH`,
+          printerId: 'ssh_printer'
+        };
+      } else {
+        this.logger.error(`❌ Falha na impressão SSH do pedido ${orderData.id}: ${result.message}`);
         return {
           success: false,
-          message: 'Impressora não encontrada',
-          error: 'ID de impressora inválido'
+          message: result.message,
+          error: 'SSH_PRINT_FAILED'
         };
       }
 
-      // 🚀 IMPRESSÃO DIRETA: Usar exatamente a lógica que funcionou para Eric!
-      this.logger.log(`🖨️ Usando comando que funcionou: lp -d ${printer.name} -o raw`);
-
-      // SEMPRE usar a impressora do sistema (a que funcionou)
-      const printResult = await this.printToSystemPrinter(printer.name, printText);
-
-      if (printResult.success) {
-        this.logger.log(`✅ Pedido ${orderData.id} impresso com sucesso`);
-      } else {
-        this.logger.error(`❌ Falha na impressão do pedido ${orderData.id}`);
-      }
-
-      return printResult;
-
     } catch (error) {
-      this.logger.error('❌ Erro geral na impressão:', error);
+      this.logger.error(`💥 Erro SSH para pedido ${orderData.id}: ${error.message}`);
       return {
         success: false,
-        message: 'Erro interno na impressão',
-        error: error.message
+        message: `Erro SSH: ${error.message}`,
+        error: 'SSH_CONNECTION_ERROR'
       };
     }
   }
 
   /**
-   * 🚀 ENVIAR PARA SERVIÇO LOCAL DE IMPRESSÃO
+   * 🔐 IMPRIMIR VIA SSH
    */
-  private async sendToLocalPrinterService(orderData: any, printText: string, clientIP?: string): Promise<PrintResult> {
-    try {
-      // Lista de possíveis URLs do serviço local
-      const localUrls = [
-        'http://localhost:3003',
-        'http://127.0.0.1:3003',
-        'http://192.168.1.100:3003', // Ajuste para seu IP local
-        'http://10.0.0.100:3003'     // Ajuste para seu IP local
-      ];
-
-      for (const baseUrl of localUrls) {
-        try {
-          this.logger.log(`🔗 Tentando conectar com serviço local: ${baseUrl}`);
-          
-          const response = await fetch(`${baseUrl}/print`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Forwarded-For': clientIP || 'unknown',
-              'X-Real-IP': clientIP || 'unknown'
-            },
-            body: JSON.stringify({
-              orderData,
-              printText,
-              orderId: orderData.id,
-              clientIP: clientIP || 'unknown',
-              userName: orderData.nome_cliente || 'Usuário',
-              timestamp: new Date().toISOString()
-            }),
-            // timeout: 5000 // 5 segundos de timeout (removido - não suportado no fetch)
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            this.logger.log(`✅ Serviço local respondeu: ${result.message}`);
-            return {
-              success: true,
-              message: `Impressão enviada para serviço local: ${result.message}`,
-              printerId: 'local-service'
-            };
-          } else if (response.status === 403) {
-            const errorResult = await response.json();
-            this.logger.warn(`⚠️ IP não autorizado: ${errorResult.message}`);
-            return {
-              success: false,
-              message: errorResult.message,
-              error: 'IP_NOT_AUTHORIZED',
-              authUrl: errorResult.authUrl
-            };
-          }
-        } catch (error) {
-          this.logger.debug(`⚠️ Serviço local ${baseUrl} não disponível: ${error.message}`);
-          continue;
-        }
-      }
-
-      this.logger.warn('⚠️ Nenhum serviço local de impressão encontrado');
-      return {
-        success: false,
-        message: 'Serviço local de impressão não disponível',
-        error: 'LOCAL_SERVICE_UNAVAILABLE'
-      };
-
-    } catch (error) {
-      this.logger.error('❌ Erro ao conectar com serviço local:', error);
-      return {
-        success: false,
-        message: 'Erro ao conectar com serviço local',
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * 🔌 IMPRIMIR EM DISPOSITIVO USB
-   */
-  private async printToUSBDevice(devicePath: string, printText: string): Promise<PrintResult> {
-    try {
-      // Preparar texto para impressão térmica
-      const thermalText = this.prepareThermalText(printText);
-      
-      // Escrever no dispositivo (sem flag -e que causa problemas)
-      await execAsync(`echo "${thermalText}" > ${devicePath}`);
-      
-      return {
-        success: true,
-        message: `Impresso com sucesso em ${devicePath}`
-      };
-
-    } catch (error) {
-      return {
-        success: false,
-        message: `Erro ao imprimir em ${devicePath}`,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * 🖨️ IMPRIMIR EM IMPRESSORA DO SISTEMA
-   */
-  private async printToSystemPrinter(printerName: string, printText: string): Promise<PrintResult> {
-    try {
-      // Criar arquivo temporário
-      const tempFile = `temp_print_${Date.now()}.txt`;
-      const tempFilePath = path.join(process.cwd(), tempFile);
-      fs.writeFileSync(tempFilePath, printText, 'utf8');
-
-      // Imprimir usando lp com modo RAW (mesma lógica que funcionou)
-      const lpCommand = `lp -d "${printerName}" -o raw "${tempFile}"`;
-      this.logger.log(`⚡ Executando: ${lpCommand}`);
-      
-      const { stdout } = await execAsync(lpCommand, { cwd: process.cwd() });
-      this.logger.log(`✅ Impressão enviada para: ${printerName}`);
-      this.logger.log(`📋 Resposta: ${stdout.trim()}`);
-      
-      // Limpar arquivo temporário após delay
-      setTimeout(() => {
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (cleanupError) {
-          this.logger.warn(`⚠️ Falha ao limpar arquivo temporário: ${cleanupError.message}`);
-        }
-      }, 2000);
-
-      return {
-        success: true,
-        message: `Impressão enviada com sucesso para: ${printerName}`,
-        printerId: printerName
-      };
-
-    } catch (error) {
-      this.logger.error(`❌ Erro ao imprimir em ${printerName}: ${error.message}`);
-      return {
-        success: false,
-        message: `Erro ao imprimir na impressora ${printerName}`,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * 📄 PREPARAR TEXTO PARA IMPRESSÃO TÉRMICA
-   */
-  private prepareThermalText(text: string): string {
-    // 🧹 SANITIZAÇÃO: Remover sequências de controle indesejadas
-    let sanitizedText = text;
-    let seqRemoved = false;
-
-    // Remover sequências problemáticas
-    const originalLength = sanitizedText.length;
-    sanitizedText = sanitizedText.replace(/\\x1DV\\x41\\x03/g, '');
-    sanitizedText = sanitizedText.replace(/\x1D\x56\x41\x03/g, '');
-    sanitizedText = sanitizedText.replace(/\\x1B@/g, '');
-    sanitizedText = sanitizedText.replace(/\x1B@/g, '');
-    sanitizedText = sanitizedText.replace(/-e \x1B@/g, '');
-    sanitizedText = sanitizedText.replace(/-e /g, ''); // Remove flag -e solta
-    sanitizedText = sanitizedText.replace(/\\x1D V \\x41 \\x03/g, '');
+  private async printViaSsh(printText: string): Promise<{ success: boolean; message: string }> {
+    // Escape single quotes in the print text
+    const escapedText = printText.replace(/'/g, "'\\''");
     
-    if (sanitizedText.length !== originalLength) {
-      seqRemoved = true;
-    }
+    const command = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'printf "%s\\n\\n" "${escapedText}" | lp -d "${this.LOCAL_PRINTER_NAME}"'`;
+    
+    this.logger.debug(`🔧 SSH Command: ${command.replace(this.SSH_PASSWORD, '***')}`);
 
-    // Retorna apenas o texto limpo + quebras de linha básicas (sem comandos ESC/POS)
-    return `${sanitizedText}\n\n\n`;
+    try {
+      const { stdout, stderr } = await execAsync(command);
+      
+      if (stderr && !stderr.includes('Warning: Permanently added')) {
+        this.logger.warn(`⚠️ SSH Print Warning: ${stderr}`);
+      }
+      
+      this.logger.log(`📄 SSH Print Output: ${stdout}`);
+      return { 
+        success: true, 
+        message: `Impressão enviada via SSH - ${stdout.trim()}` 
+      };
+    } catch (error) {
+      this.logger.error(`💥 SSH Command Failed: ${error.message}`);
+      return { 
+        success: false, 
+        message: `Falha SSH: ${error.message}` 
+      };
+    }
   }
 
   /**
-   * 🧪 TESTAR IMPRESSORA
+   * 🔗 TESTAR CONEXÃO SSH
+   */
+  async testSshConnection(): Promise<{ success: boolean; message: string }> {
+    const command = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'echo "SSH connection test successful"'`;
+    
+    this.logger.log('🔗 Testing SSH connection...');
+    
+    try {
+      const { stdout } = await execAsync(command);
+      this.logger.log(`✅ SSH Test Success: ${stdout}`);
+      return { 
+        success: true, 
+        message: 'Conexão SSH com impressora local estabelecida' 
+      };
+    } catch (error) {
+      this.logger.error(`❌ SSH Test Failed: ${error.message}`);
+      return { 
+        success: false, 
+        message: `Falha na conexão SSH: ${error.message}` 
+      };
+    }
+  }
+
+  /**
+   * ⚡ ATIVAR IMPRESSORA (SEMPRE ATIVA VIA SSH)
+   */
+  async activatePrinter(printerId: string): Promise<PrintResult> {
+    // SSH printers are always "active" if connection works
+    const connectionTest = await this.testSshConnection();
+    
+    if (connectionTest.success) {
+      return {
+        success: true,
+        message: `Impressora SSH está ativa e pronta`,
+        printerId
+      };
+    } else {
+      return {
+        success: false,
+        message: connectionTest.message,
+        error: 'SSH_CONNECTION_FAILED'
+      };
+    }
+  }
+
+  /**
+   * 🧪 TESTAR IMPRESSORA SSH
    */
   async testPrint(printerId: string): Promise<PrintResult> {
-    const testText = `TESTE DE IMPRESSÃO
+    const testText = `TESTE DE IMPRESSÃO SSH
 ========================
 Data: ${new Date().toLocaleString('pt-BR')}
-Impressora: ${printerId}
+Impressora: ${this.LOCAL_PRINTER_NAME}
+IP: ${this.LOCAL_PRINTER_IP}
 Sistema: JYZE DELIVERY
 ========================
 
 ✅ Se você está vendo isso,
-a impressora está funcionando!
+a impressão via SSH está funcionando!
 
 `;
 
     return await this.printOrder(printerId, { id: 'TEST' }, testText);
   }
 }
-

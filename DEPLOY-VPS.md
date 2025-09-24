@@ -1,252 +1,281 @@
-# 🚀 DEPLOY NA VPS - JYZE SYSTEM
+# 🚀 DEPLOY JYZE DELIVERY - VPS
 
-## 📋 Como Funciona
+Este documento explica como fazer o deploy completo do sistema JYZE Delivery na VPS.
 
-O sistema foi containerizado para deploy fácil na VPS usando Docker. Aqui está como funciona:
-
-### 🏗️ Arquitetura do Deploy
+## 📋 Arquitetura do Sistema
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        VPS (31.97.162.165)                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  🌐 FRONTEND (jyze.space)        📡 BACKEND (api.jyze.space) │
-│  ┌─────────────────────┐        ┌─────────────────────┐     │
-│  │   React + Nginx     │   ────▶│     NestJS API      │     │
-│  │     Port 80/443     │        │     Port 3000       │     │
-│  └─────────────────────┘        └─────────────────────┘     │
-│                                                             │
-│  🖨️ PRINT SERVICE (Via IP apenas - não usa domínio)        │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Print Service Node.js                  │   │
-│  │                Port 3003                            │   │
-│  │  • Recebe webhooks do Backend                       │   │
-│  │  • Comunica com impressora local via IP            │   │
-│  │  • Auto-autoriza VPS (31.97.162.165)              │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  🗄️ DATA PERSISTENCE                                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │   VOLUMES   │  │    LOGS     │  │   BACKUPS   │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-└─────────────────────────────────────────────────────────────┘
-
-        ▼ Comunicação via IP (192.168.3.5:3003)
-
-┌─────────────────────────────────────────────────────────────┐
-│                    IMPRESSORA LOCAL                         │
-│               (192.168.3.5:3003)                           │
-└─────────────────────────────────────────────────────────────┘
+🌐 Internet
+    ↓
+┌─────────────────────────────────────────┐
+│              VPS (Cloud)                │
+│                                         │
+│  https://jyze.space (Frontend)         │
+│  ┌─────────────────────────────────┐    │
+│  │         React/Vite              │    │
+│  │       (Port 80/443)             │    │
+│  └─────────────────────────────────┘    │
+│                  ↓                      │
+│  https://api.jyze.space (Backend)      │
+│  ┌─────────────────────────────────┐    │
+│  │         NestJS                  │    │
+│  │       (Port 3002)               │    │
+│  │                                 │    │
+│  │   🔐 SSH Client                │────┼──→ SSH túnel
+│  │   (sshpass + ssh)               │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+                  ↓ SSH
+        🔐 ssh eric@192.168.3.5
+                  ↓
+┌─────────────────────────────────────────┐
+│           PC Local (Casa)               │
+│                                         │
+│  📱 SSH Server (Port 22)               │
+│  ┌─────────────────────────────────┐    │
+│  │      Sistema Linux              │    │
+│  │                                 │    │
+│  │  🖨️ Impressora 5808L-V2024     │    │
+│  │     (USB/Local)                 │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
 ```
 
-## 🔧 Pré-requisitos na VPS
+## 🔧 Pré-requisitos
 
-### 1. Instalar Docker
+### Na VPS:
+
 ```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install docker.io docker-compose-plugin
-sudo systemctl enable docker
-sudo systemctl start docker
+# Instalar Docker e Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
-# CentOS/RHEL
-sudo yum install docker docker-compose
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker $USER
+# Instalar Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Reiniciar sessão para aplicar grupo docker
+logout
 ```
 
-### 2. Configurar Firewall
+### No PC Local:
+
 ```bash
-# Permitir portas necessárias
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw allow 3000
-sudo ufw allow 3003
+# Garantir que SSH está ativo
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+# Configurar firewall (se necessário)
+sudo ufw allow ssh
 sudo ufw enable
+
+# Verificar IP local
+ip addr show | grep inet
 ```
 
-## 🚀 Processo de Deploy
+## 📦 Deploy na VPS
 
-### 1. **Clonar o Repositório**
+### 1. Clonar o repositório:
+
 ```bash
 cd /opt
-sudo git clone https://github.com/ericvalle146/jYzeee.git
-cd jYzeee
-sudo chown -R $USER:$USER .
+sudo git clone https://github.com/ericvalle146/jYzeee.git jyze-delivery
+sudo chown -R $USER:$USER jyze-delivery
+cd jyze-delivery
 ```
 
-### 2. **Configurar Variáveis de Ambiente**
+### 2. Configurar variáveis de ambiente:
+
 ```bash
+# Copiar arquivo de exemplo
 cp env.example .env
+
+# Editar configurações
 nano .env
 ```
 
-**Configure essas variáveis importantes:**
-```env
-# Database (Supabase)
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_ANON_KEY=sua_chave_aqui
-SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
+**Configurações importantes no .env:**
 
-# Network - IMPORTANTE: Usar os domínios corretos
-LOCAL_IP=31.97.162.165  # IP da VPS
-VPS_BACKEND_URL=https://api.jyze.space  # Backend sempre usa api.jyze.space
-CORS_ORIGIN=https://jyze.space          # Frontend sempre usa jyze.space
+```bash
+# 🗄️ BANCO DE DADOS (SUPABASE)
+SUPABASE_URL=https://jfhffvwlmmpvzrrxqkiy.supabase.co
+SUPABASE_KEY=eyJhbGci...
 
-# Printer Service (comunicação via IP)
+# 🔐 IMPRESSÃO SSH
+SSH_USER=eric
+SSH_HOST=192.168.3.5
+SSH_PASSWORD=sua_senha_ssh_aqui
 PRINTER_NAME=5808L-V2024
-VPS_ALLOWED_IPS=31.97.162.165  # IP da VPS para auto-aprovação
 
-# Security
-WEBHOOK_SECRET=sua_chave_super_secreta_aqui
+# 🌐 URLS
+CORS_ORIGIN=https://jyze.space
+FRONTEND_URL=https://jyze.space
+BACKEND_URL=https://api.jyze.space
 ```
 
-### 3. **Executar Deploy**
+### 3. Deploy automático:
+
 ```bash
 # Deploy completo
-./deploy.sh deploy
+./deploy.sh
 
-# Ou comando por comando:
-./deploy.sh build   # Construir imagens
-./deploy.sh up      # Subir serviços
-./deploy.sh status  # Verificar status
+# Ou comandos específicos:
+./deploy.sh deploy     # Deploy completo
+./deploy.sh start      # Apenas iniciar
+./deploy.sh stop       # Parar serviços
+./deploy.sh status     # Ver status
+./deploy.sh logs       # Ver logs
 ```
 
-## 🌐 Como Funciona Cada Serviço
+## 🔐 Configuração SSH para Impressão
 
-### **1. Frontend (React + Nginx) - jyze.space**
-- **Container:** `jyze-frontend`
-- **Domínio:** `https://jyze.space`
-- **Porta:** 80 (HTTP) e 443 (HTTPS)
-- **Função:** Interface do usuário, proxy para backend
-- **Build:** Vite constrói para produção, Nginx serve
-- **Proxy:** `/api/*` → `https://api.jyze.space`
+### No PC Local (onde está a impressora):
 
-### **2. Backend (NestJS) - api.jyze.space**
-- **Container:** `jyze-backend`
-- **Domínio:** `https://api.jyze.space`
-- **Porta:** 3000
-- **Função:** API REST, WebSockets, lógica de negócio
-- **Database:** Supabase integrado
-- **Health Check:** `GET https://api.jyze.space/health`
+1. **Verificar se SSH está funcionando:**
+```bash
+# Testar localmente
+ssh eric@localhost
 
-### **3. Serviço de Impressão (Via IP)**
-- **Container:** `jyze-print-service`
-- **IP:** `31.97.162.165:3003` (sem domínio)
-- **Função:** Receber webhooks, imprimir via IP local
-- **Comunicação:** IP direto com impressora local
-- **Status:** `GET http://31.97.162.165:3003/status`
+# Verificar status
+sudo systemctl status ssh
+```
 
-### **4. Volumes e Persistência**
-- **backend_data:** Dados do backend NestJS
-- **print_queue:** Fila de impressão
-- **logs:** Logs centralizados de todos os serviços
+2. **Configurar acesso (se necessário):**
+```bash
+# Editar configuração SSH
+sudo nano /etc/ssh/sshd_config
 
-## 🔄 Fluxo de Funcionamento
+# Permitir autenticação por senha
+PasswordAuthentication yes
 
-### **Para Usuários Web:**
-1. Acesso via browser → `http://vps-ip` ou `https://seudominio.com`
-2. Frontend (Nginx) serve a aplicação React
-3. API calls vão para Backend (`/api/*`)
-4. Backend processa e salva no Supabase
-5. Impressão via webhook para Print Service
+# Reiniciar SSH
+sudo systemctl restart ssh
+```
 
-### **Para Impressão:**
-1. Pedido criado na interface web
-2. Backend envia webhook para Print Service
-3. Print Service verifica IP autorizado
-4. Imprime na impressora local via comando `lp`
-5. Retorna status para Backend
+### Na VPS (testar conexão):
+
+```bash
+# Testar conexão SSH da VPS para o PC
+ssh eric@192.168.3.5
+
+# Testar impressão direta
+ssh eric@192.168.3.5 'echo "Teste VPS" | lp -d "5808L-V2024"'
+```
+
+## 🌐 Configuração DNS
+
+Configure os domínios para apontar para o IP da VPS:
+
+```
+Tipo A: jyze.space → [IP_DA_VPS]
+Tipo A: api.jyze.space → [IP_DA_VPS]
+Tipo A: www.jyze.space → [IP_DA_VPS]
+```
 
 ## 📊 Monitoramento
 
-### **Verificar Status:**
+### Ver logs em tempo real:
 ```bash
-# Status geral
-./deploy.sh status
-
-# Logs em tempo real
+# Todos os serviços
 ./deploy.sh logs
 
-# Saúde dos serviços
-./deploy.sh health
+# Serviço específico
+./deploy.sh logs backend
+./deploy.sh logs frontend
+```
 
-# Restart se necessário
+### Verificar status:
+```bash
+./deploy.sh status
+```
+
+### Health checks:
+```bash
+./deploy.sh health
+```
+
+## 🔄 Comandos Úteis
+
+### Atualização rápida:
+```bash
+./deploy.sh quick-update
+```
+
+### Backup manual:
+```bash
+sudo tar -czf /var/backups/jyze/manual-backup-$(date +%Y%m%d).tar.gz /var/lib/jyze
+```
+
+### Rollback:
+```bash
+./deploy.sh rollback
+```
+
+### Limpeza do sistema:
+```bash
+./deploy.sh cleanup
+```
+
+## 🚨 Troubleshooting
+
+### Frontend não carrega:
+```bash
+# Verificar logs
+./deploy.sh logs frontend
+
+# Verificar se está rodando
+curl -I http://localhost
+
+# Reiniciar
 ./deploy.sh restart
 ```
 
-### **URLs de Monitoramento:**
-- **Frontend:** `http://vps-ip/`
-- **Backend Health:** `http://vps-ip:3000/health`
-- **Print Service:** `http://vps-ip:3003/status`
-- **Print Panel:** `http://vps-ip:3003/`
-
-## 🔧 Manutenção
-
-### **Backup:**
+### Backend não responde:
 ```bash
-./deploy.sh backup
+# Verificar logs
+./deploy.sh logs backend
+
+# Testar API
+curl http://localhost:3002/printer/status
+
+# Verificar SSH
+docker-compose exec backend sshpass -p 'sua_senha' ssh eric@192.168.3.5 'echo teste'
 ```
 
-### **Update do Sistema:**
+### Impressão não funciona:
 ```bash
-./deploy.sh update  # Puxa do Git e redeploy
+# Testar SSH do container
+docker-compose exec backend sshpass -p 'sua_senha' ssh eric@192.168.3.5 'lpstat -t'
+
+# Verificar impressora no PC local
+ssh eric@192.168.3.5 'lpstat -p 5808L-V2024'
+
+# Testar impressão manual
+ssh eric@192.168.3.5 'echo "Teste manual" | lp -d "5808L-V2024"'
 ```
 
-### **Limpeza:**
-```bash
-./deploy.sh cleanup  # Remove containers não utilizados
-```
+## 📝 URLs Finais
 
-### **Parar Tudo:**
-```bash
-./deploy.sh down
-```
+Após o deploy completo:
 
-## 🛡️ Segurança
+- **Frontend:** https://jyze.space
+- **Backend API:** https://api.jyze.space
+- **Status:** https://api.jyze.space/printer/status
+- **Health Check:** https://jyze.space/health
 
-### **Firewall Configurado:**
-- Porta 80: Frontend HTTP
-- Porta 443: Frontend HTTPS (se configurado SSL)
-- Porta 3000: Backend API (opcional, via proxy)
-- Porta 3003: Print Service (interno)
+## 🔒 Segurança
 
-### **Autenticação:**
-- IPs autorizados no Print Service
-- Auto-aprovação para VPS (31.97.162.165)
-- Webhook secrets para comunicação segura
+- SSH configurado com senha (pode ser melhorado com chaves)
+- CORS configurado apenas para domínios autorizados
+- Headers de segurança no Nginx
+- Containers rodando com usuários não-root
+- Logs centralizados e rotacionados
 
-### **Volumes Seguros:**
-- Dados persistentes em volumes Docker
-- Logs centralizados
-- Backup automático disponível
+## 📞 Suporte
 
-## 🌍 Acesso de Produção
-
-### **Usuários Acessam:**
-- **Web:** `https://seudominio.com` (se DNS configurado)
-- **IP:** `http://vps-ip`
-- **Painel Print:** `http://vps-ip:3003`
-
-### **Integração com Printer Local:**
-- Print Service na VPS pode enviar para impressora local
-- IP local deve autorizar VPS (31.97.162.165)
-- Webhook bidirecional para confirmação
-
-## 🎯 Resultado Final
-
-Após deploy, você terá:
-
-✅ **Sistema completo rodando na VPS**  
-✅ **Interface web acessível publicamente**  
-✅ **API backend funcionando**  
-✅ **Serviço de impressão via IP**  
-✅ **Cache Redis para performance**  
-✅ **Auto-update dos containers**  
-✅ **Monitoramento e logs**  
-✅ **Backup automático disponível**  
-
-O sistema ficará disponível 24/7 na VPS e poderá imprimir na impressora local via rede!
+Para problemas ou dúvidas:
+1. Verificar logs: `./deploy.sh logs`
+2. Verificar status: `./deploy.sh status`
+3. Revisar configurações no `.env`
+4. Testar conexão SSH manualmente

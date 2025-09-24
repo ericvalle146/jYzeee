@@ -102,6 +102,15 @@ export class UnifiedPrinterController {
   }
 
   /**
+   * 🔗 TESTE DE CONEXÃO SSH
+   */
+  @Get('test-ssh')
+  async testSshConnection(): Promise<{success: boolean; message: string}> {
+    this.logger.log('📡 GET /printer/test-ssh - Testando conexão SSH');
+    return await this.printerService.testSshConnection();
+  }
+
+  /**
    * 📊 STATUS GERAL DO SISTEMA
    */
   @Get('status')
