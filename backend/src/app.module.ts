@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
 import { UnifiedPrinterService } from './unified-printer.service';
 import { UnifiedPrinterController } from './unified-printer.controller';
 import { OrdersService } from './modules/orders/orders.service';
@@ -32,6 +33,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
     MonitoringModule,
   ],
   controllers: [
+    AppController,
     UnifiedPrinterController, 
     OrdersController, 
     WorkflowsController,
