@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Order } from '../types/orders';
 import { useOrders } from '../hooks/useOrders';
-import { useUnifiedPrinter } from '../hooks/useUnifiedPrinter';
+import { useSSHPrinter } from '../hooks/useSSHPrinter';
 import { useToast } from '../hooks/use-toast';
 
 interface GlobalAutoPrintContextType {
@@ -47,14 +47,13 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
 
   // Hooks para dados e impressão
   const { orders, updatePrintStatus } = useOrders();
-  const { 
-    selectedPrinter, 
-    printOrder: printOrderFunction,
-    printers,
-    isDetecting,
-    detectPrinters,
-    selectPrinter
-  } = useUnifiedPrinter();
+  const {
+    isAvailable: isSSHAvailable,
+    isConnected: isSSHConnected,
+    printOrderViaSSH,
+    checkStatus: checkSSHStatus,
+    printerInfo
+  } = useSSHPrinter();
   
   // Refs para controle
   const processedOrdersRef = useRef<Set<number>>(new Set());
@@ -84,23 +83,22 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
     return () => clearTimeout(timer);
   }, []);
 
-  // Detectar impressoras automaticamente na inicialização (copiado da página Pedidos)
+  // Verificar SSH automaticamente na inicialização
   useEffect(() => {
-    const initDetectPrinters = async () => {
+    const initSSHCheck = async () => {
       try {
-        console.log('🌐 GLOBAL AUTO-PRINT: Iniciando detecção automática de impressoras...');
-        await detectPrinters();
+        console.log('🌐 GLOBAL AUTO-PRINT: Verificando conexão SSH...');
+        await checkSSHStatus();
       } catch (error) {
-        console.error('🌐 GLOBAL AUTO-PRINT: Erro ao detectar impressoras:', error);
+        console.error('🌐 GLOBAL AUTO-PRINT: Erro ao verificar SSH:', error);
       }
     };
 
-    // Detectar impressoras apenas uma vez na inicialização
-    if (printers.length === 0 && !isDetecting) {
-      console.log('🌐 GLOBAL AUTO-PRINT: Nenhuma impressora detectada, iniciando busca...');
-      initDetectPrinters();
+    if (isEnabled) {
+      console.log('🌐 GLOBAL AUTO-PRINT: Auto-print habilitado, verificando SSH...');
+      initSSHCheck();
     }
-  }, [detectPrinters, printers.length, isDetecting]);
+  }, [isEnabled, checkSSHStatus]);
 
   // Monitorar quando impressora é selecionada automaticamente
   useEffect(() => {
@@ -160,11 +158,11 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
       return false;
     }
 
-    if (!selectedPrinter) {
-      console.error('❌ GLOBAL AUTO-PRINT: Impressora não selecionada');
+    if (!isSSHAvailable || !isSSHConnected) {
+      console.error('❌ GLOBAL AUTO-PRINT: SSH não disponível');
       toast({
-        title: "❌ Erro na Auto-impressão",
-        description: "Configure suas preferências de impressão para continuar.",
+        title: "❌ Erro na Auto-impressão SSH",
+        description: "Conexão SSH com a impressora não está disponível.",
         duration: 5000,
       });
       return false;
@@ -172,9 +170,10 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
 
     try {
       setIsProcessing(true);
-      console.log(`🖨️ GLOBAL AUTO-PRINT: Tentando imprimir pedido #${order.id}`);
+      console.log(`🔐 GLOBAL AUTO-PRINT: Tentando imprimir pedido #${order.id} via SSH`);
 
-      const success = await printOrderFunction(order, selectedPrinter);
+      const result = await printOrderViaSSH(order);
+      const success = result.success;
       
       if (success) {
         // Marcar como impresso no banco
@@ -431,12 +430,12 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
     printQueueSize: printQueue.length,
     activationTimestamp,
     reset,
-    // Informações da impressora
-    selectedPrinter,
-    printers,
-    isDetecting,
-    detectPrinters,
-    selectPrinter,
+    // Informações da impressora SSH
+    selectedPrinter: isSSHAvailable ? 'ssh_printer' : null,
+    printers: isSSHAvailable ? [printerInfo] : [],
+    isDetecting: false,
+    detectPrinters: checkSSHStatus,
+    selectPrinter: () => {}, // SSH não precisa seleção manual
   };
 
   return (
