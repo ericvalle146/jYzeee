@@ -28,7 +28,8 @@ export interface PrintResult {
 export class UnifiedPrinterService {
   private readonly logger = new Logger(UnifiedPrinterService.name);
   private readonly SSH_USER = process.env.SSH_USER || 'eric';
-  private readonly LOCAL_PRINTER_IP = process.env.SSH_HOST || '192.168.3.5';
+  private readonly LOCAL_PRINTER_IP = process.env.SSH_HOST || 'localhost';
+  private readonly SSH_PORT = process.env.SSH_PORT || '2222';
   private readonly LOCAL_PRINTER_NAME = process.env.PRINTER_NAME || '5808L-V2024';
   private readonly SSH_PASSWORD = process.env.SSH_PASSWORD || 'eqrwiecr';
 
@@ -47,8 +48,8 @@ export class UnifiedPrinterService {
         status: connectionTest.success ? 'online' : 'error',
         isDefault: true,
         type: 'ssh',
-        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP}`,
-        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}`,
+        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP}:${this.SSH_PORT}`,
+        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}:${this.SSH_PORT}`,
         canActivate: false
       }];
 
@@ -60,8 +61,8 @@ export class UnifiedPrinterService {
         status: 'error',
         isDefault: true,
         type: 'ssh',
-        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP} (ERRO)`,
-        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}`,
+        description: `Impressora via SSH em ${this.LOCAL_PRINTER_IP}:${this.SSH_PORT} (ERRO)`,
+        connection: `SSH ${this.SSH_USER}@${this.LOCAL_PRINTER_IP}:${this.SSH_PORT}`,
         canActivate: false
       }];
     }
@@ -110,7 +111,7 @@ export class UnifiedPrinterService {
     // Escape single quotes in the print text
     const escapedText = printText.replace(/'/g, "'\\''");
     
-    const command = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'printf "%s\\n\\n" "${escapedText}" | lp -d "${this.LOCAL_PRINTER_NAME}"'`;
+    const command = `sshpass -p '${this.SSH_PASSWORD}' ssh -p ${this.SSH_PORT} -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'printf "%s\\n\\n" "${escapedText}" | lp -d "${this.LOCAL_PRINTER_NAME}"'`;
     
     this.logger.debug(`🔧 SSH Command: ${command.replace(this.SSH_PASSWORD, '***')}`);
 
@@ -169,7 +170,7 @@ export class UnifiedPrinterService {
       const util = require('util');
       const execAsync = util.promisify(exec);
 
-      const sshCommand = `sshpass -p '${this.SSH_PASSWORD}' ssh -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'echo "SSH connection test successful"'`;
+      const sshCommand = `sshpass -p '${this.SSH_PASSWORD}' ssh -p ${this.SSH_PORT} -o StrictHostKeyChecking=no ${this.SSH_USER}@${this.LOCAL_PRINTER_IP} 'echo "SSH connection test successful"'`;
       
       const { stdout, stderr } = await execAsync(sshCommand);
       
