@@ -55,6 +55,10 @@ export const GlobalAutoPrintProvider: React.FC<GlobalAutoPrintProviderProps> = (
     printerInfo
   } = useSSHPrinter();
   
+  // Criar variáveis compatíveis
+  const selectedPrinter = isSSHAvailable ? 'ssh_printer' : null;
+  const printers = isSSHAvailable ? [printerInfo] : [];
+  
   // Refs para controle
   const processedOrdersRef = useRef<Set<number>>(new Set());
   const previousOrdersRef = useRef<Order[]>([]);
